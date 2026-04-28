@@ -1,143 +1,236 @@
-# AGENTS.md — slk Development Guide
+# AGENTS.md — slk maintenance guide
 
-This is the full loop for working on slk. Follow this every time you add, change, or fix something.
+This file is the operating manual for AI agents modifying `slk`.
 
-## Project Structure
+`slk` is no longer a tiny one-layer CLI. It now has three distinct surfaces:
 
-```
+1. Slack-native object commands
+   - workspace, conversations, messages, threads, pins, saved items, drafts
+2. Agent-facing synthesized views
+   - triage, mentions, thread inbox, channel context
+3. Utilities
+   - export, watch
+
+When changing the CLI, preserve that separation. Do not casually mix Slack-native objects with synthesized agent workflows.
+
+## Project structure
+
+```text
 slk/
-├── bin/slk.js          # CLI entry point — command routing, help text, aliases
+├── bin/slk.js              # CLI entry point, help text, alias routing, command-scoped flag parsing
 ├── src/
-│   ├── api.js          # Slack API wrapper — fetch, auth headers, pagination
-│   ├── auth.js         # Credential extraction — Keychain, LevelDB, token cache
-│   ├── commands.js     # All command implementations (read, send, saved, etc.)
-│   └── drafts.js       # Draft-specific commands (create, list, drop)
-├── package.json        # Version, bin mapping, metadata
-├── README.md           # Full documentation for users
-├── SKILL.md            # Agent skill file (used by Moltbot/ClawdBot)
-├── AGENTS.md           # This file — dev guide for AI agents
-└── CLAUDE.md           # Quick reference for Claude Code / Codex
+│   ├── api.js              # Slack API wrapper — POST/read policy + cache TTLs
+│   ├── agent-utils.js      # Export formatting, checkpoint-ts detection, watch diffs
+│   ├── auth.js             # Credential extraction — Keychain, cookies, token cache, workspace discovery
+│   ├── cache.js            # Persistent TTL cache for safe read endpoints
+│   ├── commands.js         # Command implementations and synthesized agent views
+│   ├── config.js           # Runtime flag/env parsing (cache / queue flags only)
+│   ├── drafts.js           # Draft-specific commands
+│   ├── lock.js             # Cross-process lock / queue primitive
+│   ├── rate-limit.js       # Shared pacing state + 429 handling
+│   └── runtime.js          # Unified request pipeline
+├── tests/
+│   ├── commands.test.js    # Command behavior tests
+│   ├── config.test.js      # CLI/runtime parsing tests
+│   ├── agent-utils.test.js # Export/watch/checkpoint helpers
+│   └── ...
+├── README.md               # Public user docs
+├── SKILL.md                # Agent-facing usage guide
+├── AGENTS.md               # This file
+└── docs/
+    ├── auth-risk-mitigation.md
+    └── public-release-checklist.md
 ```
 
-## The Full Loop: Adding a New Feature
+## Canonical naming policy
 
-### 1. Write the Code
+Use these names as the preferred public vocabulary in docs and examples:
 
-Add your command implementation in `src/commands.js`:
-- Export an async function
-- Use `slackApi()` or `slackPaginate()` from `api.js`
-- Use existing helpers: `getUsers()`, `resolveChannel()`, `formatTs()`, `userName()`
-- Follow the existing pattern: fetch data → format → console.log output
-- Handle errors with `console.error` + `process.exit(1)`
+- `triage` — preferred synthesized inbox view
+  - legacy alias: `inbox`
+- `thread-inbox` — preferred thread inbox name
+  - legacy alias: `thread-unread`
+- `channel-context` — preferred channel summary name
+  - legacy alias: `context`
 
-If your new API endpoint needs POST (most Slack endpoints do), add it to the `writeMethods` array in `src/api.js`.
+Keep legacy aliases working unless intentionally shipping a breaking change.
 
-### 2. Wire Up the CLI
+## Command taxonomy
 
-In `bin/slk.js`:
-- Add the command to the `HELP` string (with alias and description)
-- Add a `case` in the `switch` block
-- Follow the pattern: validate args → call command function → handle aliases
+### 1. Slack-native object commands
+These should map cleanly to Slack concepts.
 
-### 3. Test It
+- `auth`, `workspaces`, `switch`
+- `channels`, `dms`, `users`
+- `read`, `search`, `pins`, `saved`
+- `thread`, `permalink`, `send`, `react`
+- `draft*`
 
+### 2. Synthesized agent views
+These are not one-to-one Slack objects. They combine multiple Slack sources for agent workflows.
+
+- `triage`
+- `mentions`
+- `thread-inbox`
+- `channel-context`
+- `activity`, `unread`, `starred`
+
+### 3. Utilities
+These operate on structured results produced by commands.
+
+- `export`
+- `watch`
+
+## Flag semantics policy
+
+Do not treat every flag as global. Prefer command-scoped semantics.
+
+### Preferred scoped flags
+- `search` paging → `--page`
+- `thread-inbox` paging → `--max-ts`
+- `read` history pagination → `--cursor`
+- incremental history/triage → `--checkpoint`, `--since-ts`
+- structured projection → `--summary-fields`
+- export output → `--format`, `--output`
+- watch control → `--interval`, `--iterations`
+- runtime safety → `--read-only` / `SLK_READ_ONLY=1`
+
+### Compatibility flags
+- `--cursor` may remain as a generic legacy compatibility flag
+- if a command has a more precise domain flag, prefer documenting the domain flag instead of `--cursor`
+
+## Design rules for new work
+
+### Rule 1: preserve the Slack model
+If a command represents a Slack object, keep it narrow and literal.
+
+Good:
+- `thread <conv> <ts>` reads one specific thread
+- `permalink <conv> <ts>` resolves one specific message link
+
+Bad:
+- stuffing triage logic into `thread`
+- making `read` also summarize, classify, or export by default
+
+### Rule 2: synthesized views must say they are synthesized
+If a command merges multiple Slack concepts, document that clearly.
+
+Examples:
+- `triage` = mentions + unreads + thread inbox + saved items
+- `channel-context` = channel metadata + pins + recent messages + participant rollup
+
+### Rule 3: prefer non-breaking cleanup
+If you improve naming, add aliases first and migrate docs to the better name.
+Do not break existing automation unless the repo intentionally ships a major-version CLI break.
+
+### Rule 4: machine output is a first-class surface
+For agent-facing commands, JSON shape quality matters as much as human-readable output.
+When changing command behavior, verify:
+- human output still reads cleanly
+- JSON shape stays stable or changes intentionally
+- paging/checkpoint metadata remains usable
+
+## Implementation loop
+
+### 1. Write the failing test first
+For behavior changes, add or update tests before implementation.
+
+Use:
 ```bash
-# Run directly (no install needed)
-node bin/slk.js <your-command>
-
-# Or if globally linked:
-slk <your-command>
-
-# Test edge cases:
-# - No args (should show usage)
-# - Invalid channel
-# - Auth expired (should auto-refresh)
+node --test tests/commands.test.js
+node --test tests/config.test.js
+node --test tests/agent-utils.test.js
+npm test
 ```
 
-### 4. Update Documentation
+### 2. Implement the minimal change
+Common edit locations:
+- command behavior → `src/commands.js`
+- command routing / aliases / help / command-scoped flags → `bin/slk.js`
+- export/watch/checkpoint helpers → `src/agent-utils.js`
+- runtime/cache/TTL policy → `src/api.js`, `src/runtime.js`, `src/config.js`
 
-**All three must be updated:**
+### 3. Verify both surfaces
+Always check both:
+- test suite
+- `node bin/slk.js --help`
 
-1. **README.md** — Add to:
-   - Commands table
-   - Quickstart examples (if user-facing)
-   - Flags table (if new flags)
-   - Agent usage patterns (if relevant)
-
-2. **SKILL.md** — Add to the commands list under the appropriate section (Read/Activity/Write/Drafts)
-
-3. **bin/slk.js HELP** — Already done in step 2, but double-check alignment with README
-
-### 5. Bump Version
-
+For user-visible CLI changes, also smoke-test at least one real command if it is safe to run.
+Examples:
 ```bash
-npm version patch --no-git-tag-version   # 0.1.2 → 0.1.3 (bugfix/small feature)
-npm version minor --no-git-tag-version   # 0.1.3 → 0.2.0 (new feature)
-npm version major --no-git-tag-version   # 0.2.0 → 1.0.0 (breaking change)
+node bin/slk.js triage 1 --json
+node bin/slk.js thread-inbox 1 --json
+node bin/slk.js channel-context engineering 5 --json
 ```
 
-Use `patch` for most changes. Use `minor` for significant new features.
+## Documentation update requirements
+When CLI behavior changes, update all of these together:
 
-### 6. Git Commit & Push
+1. `README.md`
+   - public-facing command taxonomy
+   - preferred command names and aliases
+   - command-scoped option semantics
+   - examples using preferred names
 
-```bash
-git add -A
-git commit -m "feat: short description of what changed
+2. `SKILL.md`
+   - agent-first command selection guidance
+   - examples using preferred names
+   - synthesized-view explanations
 
-- Detail 1
-- Detail 2
-- Bumped to x.y.z"
-git push
-```
+3. `bin/slk.js` help string
+   - keep it aligned with README and SKILL
 
-Commit message prefixes:
-- `feat:` — new feature
-- `fix:` — bug fix
-- `docs:` — documentation only
-- `refactor:` — code change that doesn't add/fix
+4. `AGENTS.md`
+   - update if the maintenance workflow, canonical naming, or taxonomy changed
 
-### 7. Publish to npm
+## What to test for each category
 
-```bash
-# Create .npmrc with publish token
-echo "//registry.npmjs.org/:_authToken=${NPM_PUBLISH_TOKEN}" > .npmrc
-npm publish
-rm .npmrc   # Clean up — don't commit the token!
-```
+### Slack-native commands
+Test:
+- channel/user resolution
+- pagination metadata
+- JSON structure
+- graceful fallback when Slack metadata fetch fails
 
-The `NPM_PUBLISH_TOKEN` env var is set in `~/.local/keys/env.sh`.
+### Synthesized agent views
+Test:
+- merged payload composition
+- ranking / priority fields if any
+- checkpoint-ts extraction behavior
+- summary-field projection
 
-### 8. Update Local Moltbot Skill
+### Utilities
+Test:
+- export shape for json / ndjson / csv
+- watch diff behavior
+- checkpoint save/load behavior if touched
 
-```bash
-cp SKILL.md ~/moltbot/skills/slk/SKILL.md
-```
+## Common mistakes to avoid
 
-This ensures Moltbot's local skill stays in sync with the published version.
+- Documenting legacy alias as if it were the preferred canonical name
+- Adding a flag to help without clarifying which commands actually support it
+- Using vague names like `context` in examples when `channel-context` is the intended public name
+- Returning pretty human text from utility commands that are supposed to be machine-friendly
+- Changing JSON shape silently without tests
+- Treating synthesized views as if they were official Slack primitives
 
-## Quick Reference: One-liner Full Deploy
+## Release readiness reminders
+Before treating changes as public/open-source quality:
+- review `docs/public-release-checklist.md`
+- review `docs/public-release-audit.md`
+- review `SECURITY.md`
+- keep auth-model warnings accurate
+- do not overstate safety or official Slack support
+- prefer explicit wording: personal local automation, signed-in user session, macOS only
+- keep the future major-version direction documented in `docs/hierarchical-subcommands.md`
 
-```bash
-cd ~/Lab/slk
-# ... make changes ...
-npm version patch --no-git-tag-version
-git add -A && git commit -m "feat: description" && git push
-echo "//registry.npmjs.org/:_authToken=${NPM_PUBLISH_TOKEN}" > .npmrc && npm publish && rm .npmrc
-cp SKILL.md ~/moltbot/skills/slk/SKILL.md
-```
+## Quick command selection guide for agents
 
-## API Notes
-
-- **Undocumented endpoints:** Slack has many internal APIs not in public docs. Use POST method. Examples: `saved.list`, `client.counts`, `users.prefs.get`, `drafts.create`.
-- **Auth:** All requests need both `Authorization: Bearer xoxc-...` header AND `Cookie: d=xoxd-...` cookie. The `slackApi()` wrapper handles this.
-- **Pagination:** Use `slackPaginate()` for list endpoints that support cursor-based pagination.
-- **Channel resolution:** `resolveChannel()` accepts names or IDs. Always use it for user-facing commands.
-
-## Testing Auth
-
-If auth breaks:
-```bash
-rm ~/.local/slk/token-cache.json
-slk auth
-```
-Make sure Slack desktop app is running.
+- Need directed asks → `mentions`
+- Need broad action queue → `triage`
+- Need subscribed thread follow-up → `thread-inbox`
+- Need channel understanding before responding → `channel-context`
+- Need exact history from one conversation → `read`
+- Need one exact thread → `thread`
+- Need a portable artifact for downstream analysis → `export`
+- Need recurring polling without writing a shell loop → `watch`

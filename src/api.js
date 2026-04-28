@@ -1,70 +1,87 @@
 /**
- * Slack API wrapper — handles auth, retries on invalid_auth, and pagination.
+ * Slack API wrapper — handles auth, retries on invalid_auth, rate protection, cache, and pagination.
  */
 
-import { getCredentials, refresh } from "./auth.js";
+import { getRuntimeConfig } from "./config.js";
+import { executeSlackRequest } from "./runtime.js";
 
-const BASE = "https://slack.com/api";
+const POST_METHODS = new Set([
+  "chat.postMessage",
+  "chat.update",
+  "chat.delete",
+  "reactions.add",
+  "reactions.remove",
+  "files.upload",
+  "drafts.create",
+  "drafts.delete",
+  "drafts.update",
+  "conversations.open",
+  "client.counts",
+  "users.prefs.get",
+  "saved.list",
+  "subscriptions.thread.getView",
+]);
 
-/**
- * Make an authenticated Slack API call.
- * Auto-refreshes credentials on invalid_auth (once).
- */
-export async function slackApi(method, params = {}, retried = false) {
-  const { token, cookie } = getCredentials();
+const WRITE_METHODS = new Set([
+  "chat.postMessage",
+  "chat.update",
+  "chat.delete",
+  "reactions.add",
+  "reactions.remove",
+  "files.upload",
+  "drafts.create",
+  "drafts.delete",
+  "drafts.update",
+  "conversations.open",
+]);
 
-  const url = new URL(`${BASE}/${method}`);
+const MUTATING_METHODS = new Set([
+  "chat.postMessage",
+  "chat.update",
+  "chat.delete",
+  "reactions.add",
+  "reactions.remove",
+  "files.upload",
+  "drafts.create",
+  "drafts.delete",
+  "drafts.update",
+]);
 
-  // GET for read methods, POST for write methods
-  const writeMethods = [
-    "chat.postMessage",
-    "chat.update",
-    "chat.delete",
-    "reactions.add",
-    "reactions.remove",
-    "files.upload",
-    "drafts.create",
-    "drafts.delete",
-    "drafts.update",
-    "conversations.open",
-    "client.counts",
-    "users.prefs.get",
-    "saved.list",
-  ];
+const CACHE_TTLS = {
+  "auth.test": 10_000,
+  "users.list": 600_000,
+  "conversations.list": 300_000,
+  "users.prefs.get": 120_000,
+  "client.counts": 15_000,
+  "conversations.history": 20_000,
+  "conversations.replies": 20_000,
+  "conversations.info": 300_000,
+  "search.messages": 30_000,
+  "saved.list": 20_000,
+  "pins.list": 30_000,
+  "chat.getPermalink": 300_000,
+  "subscriptions.thread.getView": 20_000,
+  "drafts.list": 15_000,
+};
 
-  const isWrite = writeMethods.some((m) => method.startsWith(m));
-  let res;
+function matchesMethod(method, set) {
+  return [...set].some((candidate) => method.startsWith(candidate));
+}
 
-  if (isWrite) {
-    res = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Cookie: `d=${cookie}`,
-        "Content-Type": "application/json; charset=utf-8",
-      },
-      body: JSON.stringify(params),
-    });
-  } else {
-    for (const [k, v] of Object.entries(params)) {
-      if (v !== undefined && v !== null) url.searchParams.set(k, v);
-    }
-    res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Cookie: `d=${cookie}`,
-      },
-    });
-  }
+function getCachePolicy(method) {
+  return { ttlMs: CACHE_TTLS[method] ?? 0 };
+}
 
-  const data = await res.json();
-
-  if (!data.ok && data.error === "invalid_auth" && !retried) {
-    refresh();
-    return slackApi(method, params, true);
-  }
-
-  return data;
+export async function slackApi(method, params = {}) {
+  return executeSlackRequest({
+    method,
+    params,
+    isWrite: matchesMethod(method, WRITE_METHODS),
+    isMutation: matchesMethod(method, MUTATING_METHODS),
+    isPost: matchesMethod(method, POST_METHODS),
+    cachePolicy: getCachePolicy(method),
+    config: getRuntimeConfig(),
+  });
 }
 
 /**
@@ -76,7 +93,7 @@ export async function slackPaginate(method, params = {}, key = "channels") {
 
   do {
     const data = await slackApi(method, { ...params, cursor, limit: params.limit || 200 });
-    if (!data.ok) return data; // return error as-is
+    if (!data.ok) return data;
 
     if (data[key]) results.push(...data[key]);
     cursor = data.response_metadata?.next_cursor;

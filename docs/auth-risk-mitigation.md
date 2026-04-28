@@ -15,14 +15,14 @@ This is practical for personal automation, but sensitive for public distribution
 ## Highest-priority mitigations
 
 ### 1. Harden token cache handling
-- [ ] Set cache file permissions explicitly to `0600`
-- [ ] Verify parent dir permissions on `~/.local/slk`
-- [ ] Avoid leaving plaintext tokens world-readable under any failure mode
+- [x] Set cache file permissions explicitly to `0600`
+- [x] Verify parent dir permissions on `~/.local/slk`
+- [x] Avoid leaving plaintext tokens world-readable under any failure mode
 - [ ] Consider atomic writes for cache replacement
 
 ### 2. Add cache control modes
-- [ ] `--no-cache` runtime flag
-- [ ] `SLK_NO_CACHE=1` environment variable
+- [x] `--no-cache` runtime flag
+- [x] `SLK_NO_CACHE=1` environment variable
 - [ ] optional short TTL / expiration policy for cached tokens
 - [ ] optional command to clear cache (`slk logout` / `slk cache clear`)
 

@@ -219,10 +219,10 @@ function loadTokenCache() {
   return null;
 }
 
-function saveTokenCache(token) {
+function saveTokenCache(token, teamId = getActiveWorkspace() || "default") {
   try {
-    mkdirSync(CACHE_DIR, { recursive: true });
-    writeFileSync(TOKEN_CACHE, JSON.stringify({ token, ts: Date.now() }));
+    mkdirSync(CACHE_DIR, { recursive: true, mode: 0o700 });
+    writeFileSync(TOKEN_CACHE, JSON.stringify({ token, teamId, ts: Date.now() }), { mode: 0o600 });
   } catch {}
 }
 
@@ -243,7 +243,6 @@ function validateToken(token, cookie) {
 export function getCredentials(forceRefresh = false) {
   if (cachedCreds && !forceRefresh) return cachedCreds;
 
-  // If an active workspace is set, use its token from localConfig
   const activeTeam = getActiveWorkspace();
   if (activeTeam) {
     try {
@@ -255,42 +254,36 @@ export function getCredentials(forceRefresh = false) {
 
   const cookie = decryptCookie();
 
-  // Try cached token first (fastest path)
   if (!forceRefresh) {
     const cache = loadTokenCache();
     if (cache?.token && validateToken(cache.token, cookie)) {
-      cachedCreds = { token: cache.token, cookie };
+      cachedCreds = { token: cache.token, cookie, teamId: cache.teamId || activeTeam || "default" };
       return cachedCreds;
     }
   }
 
-  // Try localConfig_v2 first (most reliable source of tokens)
   const config = extractLocalConfig();
   if (config?.teams) {
     const teamEntries = Object.values(config.teams);
     for (const team of teamEntries) {
       if (validateToken(team.token, cookie)) {
-        saveTokenCache(team.token);
-        cachedCreds = { token: team.token, cookie };
+        saveTokenCache(team.token, team.id);
+        cachedCreds = { token: team.token, cookie, teamId: team.id || activeTeam || "default" };
         return cachedCreds;
       }
     }
   }
 
-  // Extract fresh tokens from LevelDB / IndexedDB
   const candidates = extractToken();
-
-  // Validate each candidate
   for (const token of candidates) {
     if (validateToken(token, cookie)) {
-      saveTokenCache(token);
-      cachedCreds = { token, cookie };
+      saveTokenCache(token, activeTeam || "default");
+      cachedCreds = { token, cookie, teamId: activeTeam || "default" };
       return cachedCreds;
     }
   }
 
-  // Fallback: return first candidate
-  cachedCreds = { token: candidates[0], cookie };
+  cachedCreds = { token: candidates[0], cookie, teamId: activeTeam || "default" };
   return cachedCreds;
 }
 
@@ -448,11 +441,14 @@ export function getActiveWorkspace() {
 }
 
 export function setActiveWorkspace(teamId) {
-  mkdirSync(CACHE_DIR, { recursive: true });
-  writeFileSync(ACTIVE_WORKSPACE, teamId);
-  // Clear token cache so next getCredentials picks up the new workspace
+  mkdirSync(CACHE_DIR, { recursive: true, mode: 0o700 });
+  writeFileSync(ACTIVE_WORKSPACE, teamId, { mode: 0o600 });
   try { unlinkSync(TOKEN_CACHE); } catch {}
   cachedCreds = null;
+}
+
+export function getActiveWorkspaceContext() {
+  return { teamId: getActiveWorkspace() || "default" };
 }
 
 export function getCredentialsForTeam(teamId) {
@@ -462,7 +458,10 @@ export function getCredentialsForTeam(teamId) {
   }
   const team = config.teams[teamId];
   const cookie = decryptCookie();
-  cachedCreds = { token: team.token, cookie };
-  saveTokenCache(team.token);
+  if (!validateToken(team.token, cookie)) {
+    throw new Error(`Workspace ${teamId} token is no longer valid. Re-open Slack or sign in again.`);
+  }
+  cachedCreds = { token: team.token, cookie, teamId };
+  saveTokenCache(team.token, teamId);
   return cachedCreds;
 }
