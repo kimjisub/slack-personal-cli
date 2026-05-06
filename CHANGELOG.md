@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `slkcli` will be documented in this file.
+All notable changes to `slack-personal-cli` will be documented in this file.
 
 The format is inspired by Keep a Changelog, and this project follows semver-in-spirit while the CLI surface is still evolving.
 
@@ -31,7 +31,7 @@ The format is inspired by Keep a Changelog, and this project follows semver-in-s
   - `triage`
   - `thread-inbox`
   - `channel-context`
-- README now frames `slkcli` as a macOS personal/local automation tool rather than a generic Slack CLI
+- README now frames `slack-personal-cli` as a macOS personal/local automation tool rather than a generic Slack CLI
 
 ### Compatibility
 - Legacy aliases remain supported:

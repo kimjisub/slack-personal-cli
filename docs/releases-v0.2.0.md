@@ -1,4 +1,4 @@
-# `slkcli` v0.2.0 release notes
+# `slack-personal-cli` v0.2.0 release notes
 
 `v0.2.0` turns `slk` from a simple personal Slack helper into a more agent-friendly, automation-ready CLI for macOS.
 
@@ -62,10 +62,10 @@ Release validation for this snapshot included:
 
 ## Positioning reminder
 
-`slkcli` is a macOS-only personal/local automation tool. It reuses Slack desktop session credentials and acts as the signed-in user. It is not an official Slack OAuth integration.
+`slack-personal-cli` is a macOS-only personal/local automation tool. It reuses Slack desktop session credentials and acts as the signed-in user. It is not an official Slack OAuth integration.
 
 ---
 
 ## Short GitHub / npm release summary
 
-`slkcli@0.2.0` adds multi-workspace support, agent-friendly triage commands, JSON/export/watch automation helpers, and shared runtime hardening for cache + rate-limit-safe local Slack automation on macOS.
+`slack-personal-cli@0.2.0` adds multi-workspace support, agent-friendly triage commands, JSON/export/watch automation helpers, and shared runtime hardening for cache + rate-limit-safe local Slack automation on macOS.

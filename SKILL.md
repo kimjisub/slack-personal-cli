@@ -1,8 +1,8 @@
 ---
 name: slack-personal
 description: Read, send, search, and manage Slack messages and DMs via the slk CLI. Supports multiple workspaces with switching. Use when the user asks to check Slack, read channels or DMs, send Slack messages, search Slack, check unreads, manage drafts, view saved items, switch Slack workspaces, or interact with Slack workspace. Also use for heartbeat Slack checks. Triggers on "check slack", "any slack messages", "send on slack", "slack unreads", "search slack", "slack threads", "draft on slack", "read slack dms", "message on slack", "switch workspace", "slack workspaces".
-homepage: https://www.npmjs.com/package/slkcli
-metadata: {"moltbot":{"emoji":"💬","requires":{"bins":["slk"]},"install":[{"id":"npm","kind":"node","package":"slkcli","bins":["slk"],"label":"Install slk (npm)"}],"os":["darwin"]}}
+homepage: https://www.npmjs.com/package/slack-personal-cli
+metadata: {"moltbot":{"emoji":"💬","requires":{"bins":["slk"]},"install":[{"id":"npm","kind":"node","package":"slack-personal-cli","bins":["slk"],"label":"Install slk (npm)"}],"os":["darwin"]}}
 ---
 
 # slk — Slack CLI
@@ -114,13 +114,13 @@ For this Hermes skill, the maintained repo checkout should live at:
 ~/.hermes/skills/productivity/slack-personal
 ```
 
-Do **not** relocate it to ad-hoc paths like `~/.hermes/tools/slkcli` just to make the path look cleaner. Keep it in the standard Hermes skills tree under `~/.hermes/skills/productivity/` so docs, memory, and local references stay aligned.
+Do **not** relocate it to ad-hoc paths like `~/.hermes/tools/slack-personal-cli` just to make the path look cleaner. Keep it in the standard Hermes skills tree under `~/.hermes/skills/productivity/` so docs, memory, and local references stay aligned.
 
 If you want a shorter command path for day-to-day work, prefer shell aliases or `npm link` rather than moving the repo itself.
 
 ### Important local fallback
 
-In some environments, the `slk` found in `PATH` can be an older global install that does **not** expose `workspaces` / `switch`, while the maintained repo checkout of `slkcli` does support them.
+In some environments, the `slk` found in `PATH` can be an older global install that does **not** expose `workspaces` / `switch`, while the maintained repo checkout of `slack-personal-cli` does support them.
 
 When `slk workspaces` returns `Unknown command`, verify which binary is active and use the repo copy directly:
 
@@ -220,4 +220,4 @@ Use the narrowest command that matches the job:
 
 ## Missing Features & Issues
 
-Create PR or Report Issue at: https://github.com/kimjisub/slkcli
+Create PR or Report Issue at: https://github.com/kimjisub/slack-personal-cli

@@ -280,7 +280,7 @@ Examples
   SLK_READ_ONLY=1 slk send engineering "hello"
 
 Channels/conversations: name ("general"), ID ("C..."/"D..."/"G..."), @username, or user ID ("U...").
-Docs: https://github.com/therohitdas/slkcli`;
+Docs: https://github.com/kimjisub/slack-personal-cli`;
 
 async function main() {
   try {

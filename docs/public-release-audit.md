@@ -28,7 +28,7 @@ That means the project should keep saying all of the following, clearly and repe
 | AI / automation safety | pass | Warnings exist and read-only mode can block mutating Slack actions. |
 | Engineering quality | pass | Runtime, cache, lock, and retry behavior are documented and covered by tests. |
 | Policy / branding | pass | README already says independent/not affiliated. |
-| Naming / branding consistency | partial | Repo/package naming is consistent around `slkcli`, but future long-term brand choice (`slk` vs `slkcli`) should be kept under review. |
+| Naming / branding consistency | partial | Repo/package naming is consistent around `slack-personal-cli`, but future long-term brand choice (`slk` vs `slack-personal-cli`) should be kept under review. |
 
 ## Checklist audit
 
@@ -91,7 +91,7 @@ Assessment:
 
 Assessment:
 - Immediate release is fine.
-- Long-term question remains whether the public brand should stay `slkcli` or evolve into a more explicit name around personal Slack automation.
+- Long-term question remains whether the public brand should stay `slack-personal-cli` or evolve into a more explicit name around personal Slack automation.
 
 ## Release blockers vs non-blockers
 
@@ -101,7 +101,7 @@ Assessment:
 
 ### Worth shipping soon after `v0.2.0`
 1. public issue templates / PR template if community traffic starts to grow
-2. decide the longer-term public branding strategy (`slk` vs `slkcli`)
+2. decide the longer-term public branding strategy (`slk` vs `slack-personal-cli`)
 
 ## Recommendation
 

@@ -1,17 +1,17 @@
 {
-  "name": "slkcli",
+  "name": "slack-personal-cli",
   "version": "0.2.0",
-  "description": "macOS Slack CLI for local personal automation and agent workflows using desktop session credentials",
+  "description": "Use your personal Slack account directly from the CLI.",
   "type": "module",
   "license": "MIT",
   "author": "Rohit Das",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kimjisub/slkcli.git"
+    "url": "git+https://github.com/kimjisub/slack-personal-cli.git"
   },
-  "homepage": "https://github.com/kimjisub/slkcli",
+  "homepage": "https://github.com/kimjisub/slack-personal-cli",
   "bugs": {
-    "url": "https://github.com/kimjisub/slkcli/issues"
+    "url": "https://github.com/kimjisub/slack-personal-cli/issues"
   },
   "keywords": [
     "slack",
@@ -19,7 +19,7 @@
     "cli",
     "macos",
     "slack-api",
-    "slack-bot",
+    "personal-account",
     "agent",
     "terminal",
     "messaging"

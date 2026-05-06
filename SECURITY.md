@@ -1,6 +1,6 @@
 # Security policy
 
-`slkcli` is an auth-sensitive tool.
+`slack-personal-cli` is an auth-sensitive tool.
 
 It does not use Slack OAuth. It reads locally available Slack desktop session artifacts on macOS and reuses them to act as the signed-in user. That makes responsible disclosure especially important.
 

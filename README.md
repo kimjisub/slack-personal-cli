@@ -1,6 +1,8 @@
-# slk 💬 — macOS Slack CLI for personal automation and agent workflows
+# slack-personal-cli
 
-`slk` is a Slack command-line tool for macOS that auto-extracts auth from the local Slack desktop app. Read channels, search messages, inspect unreads and thread inboxes, manage drafts, and send messages from the terminal — without creating a Slack app or manually pasting tokens.
+Use your personal Slack account directly from the CLI.
+
+slack-personal-cli is a macOS command-line tool for using your personal Slack account directly from the terminal. It works with your existing logged-in Slack session, so you can read, search, and send messages as yourself.
 
 Built for local AI agents, terminal-heavy workflows, and power users who want Slack access from the command line.
 
@@ -10,7 +12,7 @@ Built for local AI agents, terminal-heavy workflows, and power users who want Sl
 
 ## Release status
 
-`slkcli@0.2.0` is open-source-ready for public release as a macOS personal/local automation tool.
+`slack-personal-cli@0.2.0` is open-source-ready for public release as a macOS personal/local automation tool.
 
 - Stable enough for day-to-day personal use
 - Explicit about its non-OAuth auth model
@@ -37,13 +39,13 @@ Helpful companion docs:
 ## Install
 
 ```bash
-npm install -g slkcli
+npm install -g slack-personal-cli
 ```
 
 One-shot (no install):
 
 ```bash
-npx slkcli auth
+npx slack-personal-cli auth
 ```
 
 **Requirements:** macOS, Slack desktop app (installed and logged in), Node.js 18+.
@@ -61,7 +63,7 @@ This repo already exposes a CLI entrypoint via `package.json`:
 So when developing locally, you can install the current repo copy as a real global command:
 
 ```bash
-cd /path/to/slkcli
+cd /path/to/slack-personal-cli
 npm link
 ```
 
@@ -76,14 +78,14 @@ slk read general 20
 To remove the linked global command later:
 
 ```bash
-cd /path/to/slkcli
-npm unlink -g slkcli
+cd /path/to/slack-personal-cli
+npm unlink -g slack-personal-cli
 ```
 
 If you prefer a one-time global install instead of a live symlink:
 
 ```bash
-cd /path/to/slkcli
+cd /path/to/slack-personal-cli
 npm install -g .
 ```
 
@@ -96,10 +98,8 @@ Add to your AI agent (Claude Code, Codex, Moltbot, etc.):
 clawdhub install slack-personal
 
 # skills.sh
-npx skills add therohitdas/slkcli
+npx skills add kimjisub/slack-personal-cli
 ```
-
-Browse on [ClawdHub](https://www.clawhub.ai/therohitdas/slack-personal).
 
 ## Quickstart
 
@@ -550,14 +550,14 @@ The `bin` field in `package.json` maps `slk` to `./bin/slk.js`:
 Running `npm install -g` creates a symlink in your PATH:
 
 ```
-/opt/homebrew/bin/slk -> ../lib/node_modules/slkcli/bin/slk.js
+/opt/homebrew/bin/slk -> ../lib/node_modules/slack-personal-cli/bin/slk.js
 ```
 
 ## Development
 
 ```bash
-git clone https://github.com/therohitdas/slkcli.git
-cd slkcli
+git clone https://github.com/kimjisub/slack-personal-cli.git
+cd slack-personal-cli
 node bin/slk.js auth       # run directly
 npm link                   # symlink globally for development
 ```
