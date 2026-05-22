@@ -46,8 +46,7 @@ In `bin/slk.js`:
 node bin/slk.js <your-command>
 
 # Or if globally linked:
-slack-personal-cli <your-command>   # Long-form command
-slk <your-command>                  # Short alias
+slk <your-command>
 
 # Test edge cases:
 # - No args (should show usage)

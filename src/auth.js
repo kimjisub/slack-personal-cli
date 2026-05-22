@@ -37,16 +37,7 @@ function resolveSlackDir() {
 const SLACK_DIR = resolveSlackDir();
 const LEVELDB_DIR = join(SLACK_DIR, "Local Storage", "leveldb");
 const COOKIES_DB = join(SLACK_DIR, "Cookies");
-const NEW_CACHE_DIR = join(homedir(), ".local", "slack-personal-cli");
-const OLD_CACHE_DIR = join(homedir(), ".local", "slacklane");
-
-function resolveCacheDir() {
-  if (existsSync(NEW_CACHE_DIR)) return NEW_CACHE_DIR;
-  if (existsSync(OLD_CACHE_DIR)) return OLD_CACHE_DIR;
-  return NEW_CACHE_DIR;
-}
-
-const CACHE_DIR = resolveCacheDir();
+const CACHE_DIR = join(homedir(), ".local", "slack-personal-cli");
 const TOKEN_CACHE = join(CACHE_DIR, "token-cache.json");
 const ACTIVE_WORKSPACE = join(CACHE_DIR, "active-workspace");
 

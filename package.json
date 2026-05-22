@@ -25,9 +25,7 @@
     "messaging"
   ],
   "bin": {
-    "slack-personal-cli": "bin/slk.js",
-    "slk": "bin/slk.js",
-    "slacklane": "bin/slk.js"
+    "slk": "bin/slk.js"
   },
   "files": [
     "bin/",

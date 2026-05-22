@@ -1,5 +1,5 @@
 export function getLiveTestConfig(env = process.env) {
-  const enabled = env.SLK_LIVE_TESTS === '1' || env.SLACKLANE_LIVE_TESTS === '1';
+  const enabled = env.SLK_LIVE_TESTS === '1';
   if (!enabled) {
     return {
       enabled: false,
@@ -10,10 +10,10 @@ export function getLiveTestConfig(env = process.env) {
     };
   }
 
-  const channel = env.SLK_LIVE_CHANNEL || env.SLACKLANE_LIVE_CHANNEL || null;
-  const messageTs = env.SLK_LIVE_MESSAGE_TS || env.SLACKLANE_LIVE_MESSAGE_TS || null;
-  const threadTs = env.SLK_LIVE_THREAD_TS || env.SLACKLANE_LIVE_THREAD_TS || null;
-  const allowWrite = env.SLK_LIVE_ALLOW_WRITE === '1' || env.SLACKLANE_LIVE_ALLOW_WRITE === '1';
+  const channel = env.SLK_LIVE_CHANNEL || null;
+  const messageTs = env.SLK_LIVE_MESSAGE_TS || null;
+  const threadTs = env.SLK_LIVE_THREAD_TS || null;
+  const allowWrite = env.SLK_LIVE_ALLOW_WRITE === '1';
 
   const readMissing = [];
   if (!channel) readMissing.push('SLK_LIVE_CHANNEL');

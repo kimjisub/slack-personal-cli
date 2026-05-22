@@ -25,7 +25,7 @@ npm install -g slack-personal-cli
 Or run it one-off:
 
 ```bash
-npx slack-personal-cli auth
+npx slack-personal-cli slk auth
 ```
 
 Requirements:
@@ -136,26 +136,6 @@ slk draft dm @andrej "hey, can you take a look?"
 | `slk thread <channel> <ts> [count]` | `t` | Read thread replies |
 | `slk react <channel> <ts> <emoji>` |  | Add a reaction |
 
-### Legacy compatibility aliases
-
-These still work, but the grouped family forms above are now the preferred public surface:
-
-| Legacy command | Preferred command |
-|---|---|
-| `slk workspaces` / `slk ws` | `slk workspace list` |
-| `slk switch <name>` / `slk sw <name>` | `slk workspace use <name>` |
-| `slk activity` / `slk a` | `slk inbox activity` |
-| `slk unread` / `slk ur` | `slk inbox unread` |
-| `slk saved [count]` / `slk sv [count]` | `slk inbox saved [count]` |
-| `slk starred` / `slk star` | `slk inbox starred` |
-| `slk pins <channel>` / `slk pin <channel>` | `slk channel pins <channel>` |
-| `slk drafts` | `slk draft list` |
-| `slk draft <channel> <message>` | `slk draft channel <channel> <message>` |
-| `slk draft user <user_id> <message>` | `slk draft dm <user_id|@username> <message>` |
-| `slk permalink <channel> <ts>` | `slk message link <channel> <ts>` |
-| `slk show <channel> <ts>` | `slk message show <channel> <ts>` |
-| `slk context <channel> <ts> [before] [after]` | `slk message context <channel> <ts> [before] [after]` |
-
 ## Useful flags
 
 | Flag | Description |
@@ -164,7 +144,7 @@ These still work, but the grouped family forms above are now the preferred publi
 | `--threads` | Auto-expand threads while reading |
 | `--from YYYY-MM-DD` | Read messages from a date onward |
 | `--to YYYY-MM-DD` | Read messages until a date |
-| `--all` | Include completed items in `slk saved` |
+| `--all` | Include completed items in `slk inbox saved` |
 | `--no-emoji` | Disable emoji output |
 
 ## Channel, DM, and workspace resolution
@@ -221,8 +201,6 @@ slk workspace use alpaon
 slk workspace use teamcandid
 slk workspace use T12345678
 ```
-
-Legacy aliases `slk workspaces` and `slk switch ...` still work, but the `workspace ...` family is the canonical surface.
 
 The selected workspace is then used for subsequent `slack-personal-cli` commands.
 

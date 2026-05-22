@@ -140,34 +140,6 @@ test('inbox and channel families provide consistent grouped entry points', async
   }
 });
 
-test('legacy top-level commands remain supported as compatibility aliases', async () => {
-  const cli = await loadCli();
-
-  {
-    const deps = makeDeps();
-    await cli.runCli(['workspaces'], deps);
-    assert.deepEqual(deps.calls, [['cmd.workspaces']]);
-  }
-
-  {
-    const deps = makeDeps();
-    await cli.runCli(['switch', 'alpaon'], deps);
-    assert.deepEqual(deps.calls, [['cmd.switchWorkspace', 'alpaon']]);
-  }
-
-  {
-    const deps = makeDeps();
-    await cli.runCli(['drafts'], deps);
-    assert.deepEqual(deps.calls, [['drafts.listDrafts']]);
-  }
-
-  {
-    const deps = makeDeps();
-    await cli.runCli(['unread'], deps);
-    assert.deepEqual(deps.calls, [['cmd.activity', true]]);
-  }
-});
-
 test('message action commands support thread replies and message references consistently', async () => {
   const cli = await loadCli();
 

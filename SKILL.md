@@ -2,7 +2,7 @@
 name: slack-personal
 description: Read, send, search, and manage Slack messages and DMs via the slk CLI. Supports multiple workspaces with switching. Use when the user asks to check Slack, read channels or DMs, send Slack messages, search Slack, check unreads, manage drafts, view saved items, switch Slack workspaces, or interact with Slack workspace. Also use for heartbeat Slack checks. Triggers on "check slack", "any slack messages", "send on slack", "slack unreads", "search slack", "slack threads", "draft on slack", "read slack dms", "message on slack", "switch workspace", "slack workspaces".
 homepage: https://www.npmjs.com/package/slack-personal-cli
-metadata: {"moltbot":{"emoji":"💬","requires":{"bins":["slack-personal-cli","slk"]},"install":[{"id":"npm","kind":"node","package":"slack-personal-cli","bins":["slack-personal-cli","slk"],"label":"Install slack-personal-cli (npm)"}],"os":["darwin"]}}
+metadata: {"moltbot":{"emoji":"💬","requires":{"bins":["slk"]},"install":[{"id":"npm","kind":"node","package":"slack-personal-cli","bins":["slk"],"label":"Install slack-personal-cli (npm)"}],"os":["darwin"]}}
 ---
 
 # slack-personal-cli — Slack CLI
@@ -52,20 +52,6 @@ slk draft thread <ch> <ts> <message>  # Draft a thread reply
 slk draft dm <user_id|@username> <message>  # Draft a DM
 slk draft drop <draft_id>             # Delete a draft
 
-# Legacy compatibility aliases
-slk workspaces                        # Alias: workspace list (alias: ws)
-slk switch <name|domain|id>           # Alias: workspace use (alias: sw)
-slk activity                          # Alias: inbox activity (alias: a)
-slk unread                            # Alias: inbox unread (alias: ur)
-slk starred                           # Alias: inbox starred (alias: star)
-slk saved [count] [--all]             # Alias: inbox saved (alias: sv)
-slk pins <channel>                    # Alias: channel pins (alias: pin)
-slk drafts                            # Alias: draft list
-slk draft <channel> <message>         # Alias: draft channel
-slk draft user <user_id> <message>    # Alias: draft dm
-slk permalink <channel> <ts>          # Alias: message link
-slk show <channel> <ts>               # Alias: message show
-slk context <channel> <ts> [before] [after]  # Alias: message context
 ```
 
 Channel accepts name (`general`), ID (`C08A8AQ2AFP`), `@username` for DMs, or user ID (`U07RQTFCLUC`).
@@ -103,8 +89,6 @@ slk workspace use unipad-team         # Switch by domain
 slk workspace use T05BFH4UW5T         # Switch by team ID
 slk auth                              # Verify current workspace
 ```
-
-Legacy aliases `slk workspaces` and `slk switch ...` still work, but the `workspace ...` family is the canonical surface.
 
 The `workspace use` command matches against workspace name, domain, or team ID (case-insensitive, partial match supported). After switching, all subsequent commands operate on the selected workspace until switched again.
 

@@ -6,9 +6,9 @@ import { getCredentials as getCredentialsFromAuth, refresh as refreshFromAuth } 
 import { applySharedCooldown, sleep, withRateLimitSlot } from "./rate_limit.js";
 
 const BASE = "https://slack.com/api";
-const MAX_429_RETRIES = Number(process.env.SLK_MAX_429_RETRIES || process.env.SLACKLANE_MAX_429_RETRIES || 2);
-const MIN_REQUEST_INTERVAL_MS = Number(process.env.SLK_MIN_REQUEST_INTERVAL_MS || process.env.SLACKLANE_MIN_REQUEST_INTERVAL_MS || 1200);
-const DEBUG_RATE_LIMIT = process.env.SLK_DEBUG_RATE_LIMIT === '1' || process.env.SLACKLANE_DEBUG_RATE_LIMIT === '1';
+const MAX_429_RETRIES = Number(process.env.SLK_MAX_429_RETRIES || 2);
+const MIN_REQUEST_INTERVAL_MS = Number(process.env.SLK_MIN_REQUEST_INTERVAL_MS || 1200);
+const DEBUG_RATE_LIMIT = process.env.SLK_DEBUG_RATE_LIMIT === '1';
 
 function getAuthFns() {
   const hooks = globalThis.__SLK_TEST_HOOKS__;

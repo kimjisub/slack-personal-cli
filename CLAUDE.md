@@ -29,8 +29,7 @@ Slack CLI for macOS. Auto-auth from Slack desktop app (session cookies, no bot i
 
 ```bash
 node bin/slk.js <command>   # Direct run
-slack-personal-cli <command>      # Long-form global command
-slk <command>                     # Short alias
+slk <command>
 ```
 
 ## Patterns

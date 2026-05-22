@@ -11,7 +11,7 @@ import { pathToFileURL } from "node:url";
 function buildHelp({ supportsEmoji = true } = {}) {
   const e = (emoji, fallback = "") => supportsEmoji ? `${emoji} ` : fallback;
 
-  return `${e("💬")}slack-personal-cli (slk) — Slack CLI for macOS (auto-auth from Slack desktop app)
+  return `${e("💬")}slk — Slack CLI for macOS (package: slack-personal-cli)
 
 Preferred command families:
   slk workspace list                     List all logged-in workspaces
@@ -42,21 +42,6 @@ Core commands:
   slk search <query> [n]                 Search messages across workspace
   slk thread <ch> <ts> [n] (t)           Read thread replies (default: 50)
   slk react <ch> <ts> <emoji>            Add emoji reaction
-
-Legacy compatibility aliases:
-  slk workspaces        (ws)             Legacy alias for workspace list (also available as slk)
-  slk switch <name|id>  (sw)             Legacy alias for workspace use (also available as slk)
-  slk activity          (a)              Alias for inbox activity
-  slk unread            (ur)             Alias for inbox unread
-  slk saved [n]         (sv)             Alias for inbox saved
-  slk starred           (star)           Alias for inbox starred
-  slk pins <ch>         (pin)            Alias for channel pins
-  slk drafts                             Alias for draft list
-  slk draft <ch> <msg>                   Alias for draft channel <ch> <msg>
-  slk draft user <user_id> <msg>         Alias for draft dm <user_id> <msg>
-  slk permalink <ch> <ts>                Alias for message link <ch> <ts>
-  slk show <ch> <ts>                     Alias for message show <ch> <ts>
-  slk context <ch> <ts> [b] [a]          Alias for message context <ch> <ts> [b] [a]
 
 Settings:
   --ts                                   Show raw Slack timestamps (for thread commands)
@@ -209,14 +194,6 @@ export async function runCli(rawArgs = process.argv.slice(2), deps = {}) {
       return usageError(consoleObj, exit, "Usage: slk workspace <list|use|current>");
     }
 
-    case "workspaces":
-    case "ws":
-      return cmd.workspaces();
-
-    case "switch":
-    case "sw":
-      if (!args[1]) return usageError(consoleObj, exit, "Usage: slk switch <workspace-name|domain|team-id>");
-      return cmd.switchWorkspace(args.slice(1).join(" "));
 
     case "inbox": {
       const sub = args[1];
@@ -227,21 +204,6 @@ export async function runCli(rawArgs = process.argv.slice(2), deps = {}) {
       return usageError(consoleObj, exit, "Usage: slk inbox <activity|unread|saved|starred>");
     }
 
-    case "activity":
-    case "a":
-      return cmd.activity(false);
-
-    case "unread":
-    case "ur":
-      return cmd.activity(true);
-
-    case "starred":
-    case "star":
-      return cmd.starred();
-
-    case "saved":
-    case "sv":
-      return cmd.saved(parseInt(args[1], 10) || 20, args.includes("--all"));
 
     case "channel": {
       const sub = args[1];
@@ -271,25 +233,6 @@ export async function runCli(rawArgs = process.argv.slice(2), deps = {}) {
       return usageError(consoleObj, exit, "Usage: slk message <link|show|context> ...");
     }
 
-    case "permalink":
-      if (!args[1] || !args[2]) return usageError(consoleObj, exit, "Usage: slk permalink <channel> <ts>");
-      return cmd.permalink(args[1], args[2]);
-
-    case "show":
-      if (!args[1] || !args[2]) return usageError(consoleObj, exit, "Usage: slk show <channel> <ts>");
-      return cmd.showMessage(args[1], args[2]);
-
-    case "context":
-      if (!args[1] || !args[2]) return usageError(consoleObj, exit, "Usage: slk context <channel> <ts> [before] [after]");
-      return cmd.messageContext(args[1], args[2], parseInt(args[3], 10) || 2, parseInt(args[4], 10) || (parseInt(args[3], 10) || 2));
-
-    case "pins":
-    case "pin":
-      if (!args[1]) return usageError(consoleObj, exit, "Usage: slk pins <channel>");
-      return cmd.pins(args[1]);
-
-    case "drafts":
-      return drafts.listDrafts();
 
     case "draft": {
       const sub = args[1];
@@ -302,16 +245,15 @@ export async function runCli(rawArgs = process.argv.slice(2), deps = {}) {
         if (!args[2] || !args[3] || !args[4]) return usageError(consoleObj, exit, "Usage: slk draft thread <channel> <ts> <message>");
         return drafts.draftThread(args[2], args[3], args.slice(4).join(" "));
       }
-      if (sub === "dm" || sub === "user") {
-        if (!args[2] || !args[3]) return usageError(consoleObj, exit, `Usage: slk draft ${sub} <user_id> <message>`);
-        return (drafts.draftDm ?? drafts.draftUser)(args[2], args.slice(3).join(" "));
+      if (sub === "dm") {
+        if (!args[2] || !args[3]) return usageError(consoleObj, exit, "Usage: slk draft dm <user_id> <message>");
+        return drafts.draftDm(args[2], args.slice(3).join(" "));
       }
       if (sub === "drop") {
         if (!args[2]) return usageError(consoleObj, exit, "Usage: slk draft drop <draft_id>");
         return drafts.dropDraft(args[2]);
       }
-      if (!sub || !args[2]) return usageError(consoleObj, exit, "Usage: slk draft <channel> <message>");
-      return drafts.draftChannel(sub, args.slice(2).join(" "));
+      return usageError(consoleObj, exit, "Usage: slk draft <list|channel|thread|dm|drop> ...");
     }
 
     case "help":

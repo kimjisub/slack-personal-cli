@@ -2,17 +2,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const DEFAULT_MIN_INTERVAL_MS = Number(process.env.SLK_MIN_REQUEST_INTERVAL_MS || process.env.SLACKLANE_MIN_REQUEST_INTERVAL_MS || 1200);
-const DEFAULT_LOCK_STALE_MS = Number(process.env.SLK_LOCK_STALE_MS || process.env.SLACKLANE_LOCK_STALE_MS || 30_000);
-const DEFAULT_LOCK_POLL_MS = Number(process.env.SLK_LOCK_POLL_MS || process.env.SLACKLANE_LOCK_POLL_MS || 100);
-
-const NEW_RUNTIME_DIR = path.join(os.homedir(), '.local', 'slack-personal-cli', 'runtime');
-const OLD_RUNTIME_DIR = path.join(os.homedir(), '.local', 'slacklane', 'runtime');
+const DEFAULT_MIN_INTERVAL_MS = Number(process.env.SLK_MIN_REQUEST_INTERVAL_MS || 1200);
+const DEFAULT_LOCK_STALE_MS = Number(process.env.SLK_LOCK_STALE_MS || 30_000);
+const DEFAULT_LOCK_POLL_MS = Number(process.env.SLK_LOCK_POLL_MS || 100);
 
 export function getRuntimeDir() {
-  return process.env.SLK_RUNTIME_DIR
-    || process.env.SLACKLANE_RUNTIME_DIR
-    || (fs.existsSync(NEW_RUNTIME_DIR) ? NEW_RUNTIME_DIR : fs.existsSync(OLD_RUNTIME_DIR) ? OLD_RUNTIME_DIR : NEW_RUNTIME_DIR);
+  return process.env.SLK_RUNTIME_DIR || path.join(os.homedir(), '.local', 'slack-personal-cli', 'runtime');
 }
 
 function getStatePath(runtimeDir = getRuntimeDir()) {
