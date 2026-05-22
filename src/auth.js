@@ -37,7 +37,16 @@ function resolveSlackDir() {
 const SLACK_DIR = resolveSlackDir();
 const LEVELDB_DIR = join(SLACK_DIR, "Local Storage", "leveldb");
 const COOKIES_DB = join(SLACK_DIR, "Cookies");
-const CACHE_DIR = join(homedir(), ".local", "slacklane");
+const NEW_CACHE_DIR = join(homedir(), ".local", "slack-personal-cli");
+const OLD_CACHE_DIR = join(homedir(), ".local", "slacklane");
+
+function resolveCacheDir() {
+  if (existsSync(NEW_CACHE_DIR)) return NEW_CACHE_DIR;
+  if (existsSync(OLD_CACHE_DIR)) return OLD_CACHE_DIR;
+  return NEW_CACHE_DIR;
+}
+
+const CACHE_DIR = resolveCacheDir();
 const TOKEN_CACHE = join(CACHE_DIR, "token-cache.json");
 const ACTIVE_WORKSPACE = join(CACHE_DIR, "active-workspace");
 
@@ -65,7 +74,7 @@ function getKeychainKey() {
 }
 
 function decryptCookie() {
-  const tmpDb = join(tmpdir(), `slacklane_cookies_${Date.now()}.db`);
+  const tmpDb = join(tmpdir(), `slk_cookies_${Date.now()}.db`);
   copyFileSync(COOKIES_DB, tmpDb);
 
   try {
@@ -87,7 +96,7 @@ function decryptCookie() {
     const iv = Buffer.alloc(16, " ");
 
     // Decrypt via openssl using spawnSync for clean binary output
-    const tmpEnc = join(tmpdir(), `slacklane_enc_${Date.now()}.bin`);
+    const tmpEnc = join(tmpdir(), `slk_enc_${Date.now()}.bin`);
     writeFileSync(tmpEnc, data);
 
     const result = spawnSync("openssl", [

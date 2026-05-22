@@ -11,7 +11,7 @@ const baseEnv = {
 };
 
 function runCli(args) {
-  const result = spawnSync('node', ['bin/slacklane.js', ...args], {
+  const result = spawnSync('node', ['bin/slk.js', ...args], {
     cwd: process.cwd(),
     env: baseEnv,
     encoding: 'utf-8',
@@ -70,14 +70,14 @@ test('live Slack integration: thread write commands succeed when explicitly enab
   skip: !config.enabled
     ? config.reason
     : !config.allowWrite
-      ? 'Set SLACKLANE_LIVE_ALLOW_WRITE=1 to run live Slack write tests.'
+      ? 'Set SLK_LIVE_ALLOW_WRITE=1 to run live Slack write tests.'
       : config.readTargets.missing.length > 0 || config.writeTargets.missing.length > 0
         ? `Missing ${[...config.readTargets.missing, ...config.writeTargets.missing].join(', ')} for live Slack write tests.`
         : false,
 }, () => {
   const { channel } = config.readTargets;
   const { threadTs } = config.writeTargets;
-  const marker = `[slacklane live test ${Date.now()}]`;
+  const marker = `[slk live test ${Date.now()}]`;
 
   const replyResult = runCli(['reply', channel, threadTs, `${marker} reply`]);
   assertOk(replyResult, 'reply');

@@ -1,12 +1,12 @@
-# AGENTS.md — slacklane Development Guide
+# AGENTS.md — slack-personal-cli Development Guide
 
-This is the full loop for working on slacklane. Follow this every time you add, change, or fix something.
+This is the full loop for working on slack-personal-cli. Follow this every time you add, change, or fix something.
 
 ## Project Structure
 
 ```
-slacklane/
-├── bin/slacklane.js          # CLI entry point — command routing, help text, aliases
+slack-personal-cli/
+├── bin/slk.js          # CLI entry point — command routing, help text, aliases
 ├── src/
 │   ├── api.js          # Slack API wrapper — fetch, auth headers, pagination
 │   ├── auth.js         # Credential extraction — Keychain, LevelDB, token cache
@@ -34,7 +34,7 @@ If your new API endpoint needs POST (most Slack endpoints do), add it to the `wr
 
 ### 2. Wire Up the CLI
 
-In `bin/slacklane.js`:
+In `bin/slk.js`:
 - Add the command to the `HELP` string (with alias and description)
 - Add a `case` in the `switch` block
 - Follow the pattern: validate args → call command function → handle aliases
@@ -43,11 +43,11 @@ In `bin/slacklane.js`:
 
 ```bash
 # Run directly (no install needed)
-node bin/slacklane.js <your-command>
+node bin/slk.js <your-command>
 
 # Or if globally linked:
-slacklane <your-command>   # Canonical name
-slk <your-command>         # Legacy alias
+slack-personal-cli <your-command>   # Long-form command
+slk <your-command>                  # Short alias
 
 # Test edge cases:
 # - No args (should show usage)
@@ -67,7 +67,7 @@ slk <your-command>         # Legacy alias
 
 2. **SKILL.md** — Add to the commands list under the appropriate section (Read/Activity/Write/Drafts)
 
-3. **bin/slacklane.js HELP** — Already done in step 2, but double-check alignment with README
+3. **bin/slk.js HELP** — Already done in step 2, but double-check alignment with README
 
 ### 5. Bump Version
 
@@ -111,7 +111,7 @@ The `NPM_PUBLISH_TOKEN` env var is set in `~/.local/keys/env.sh`.
 ### 8. Update Local Moltbot Skill
 
 ```bash
-cp SKILL.md ~/moltbot/skills/slacklane/SKILL.md
+cp SKILL.md ~/moltbot/skills/slack-personal-cli/SKILL.md
 ```
 
 This ensures Moltbot's local skill stays in sync with the published version.
@@ -119,12 +119,12 @@ This ensures Moltbot's local skill stays in sync with the published version.
 ## Quick Reference: One-liner Full Deploy
 
 ```bash
-cd ~/Lab/slacklane
+cd ~/Lab/slack-personal-cli
 # ... make changes ...
 npm version patch --no-git-tag-version
 git add -A && git commit -m "feat: description" && git push
 echo "//registry.npmjs.org/:_authToken=${NPM_PUBLISH_TOKEN}" > .npmrc && npm publish && rm .npmrc
-cp SKILL.md ~/moltbot/skills/slacklane/SKILL.md
+cp SKILL.md ~/moltbot/skills/slack-personal-cli/SKILL.md
 ```
 
 ## API Notes
@@ -138,7 +138,7 @@ cp SKILL.md ~/moltbot/skills/slacklane/SKILL.md
 
 If auth breaks:
 ```bash
-rm ~/.local/slacklane/token-cache.json
-slacklane auth
+rm ~/.local/slack-personal-cli/token-cache.json
+slk auth
 ```
 Make sure Slack desktop app is running.

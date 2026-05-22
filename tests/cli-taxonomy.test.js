@@ -4,7 +4,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 async function loadCli() {
-  const cliUrl = pathToFileURL(path.join(process.cwd(), 'bin', 'slacklane.js')).href;
+  const cliUrl = pathToFileURL(path.join(process.cwd(), 'bin', 'slk.js')).href;
   return import(`${cliUrl}?t=${Date.now()}-${Math.random()}`);
 }
 

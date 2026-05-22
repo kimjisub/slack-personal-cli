@@ -6,16 +6,16 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 function makeRuntimeDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'slacklane-api-rate-limit-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'slk-api-rate-limit-'));
 }
 
 async function loadApiWithHooks({ runtimeDir, fetchImpl, refreshImpl } = {}) {
-  process.env.SLACKLANE_RUNTIME_DIR = runtimeDir;
-  process.env.SLACKLANE_MIN_REQUEST_INTERVAL_MS = '25';
-  process.env.SLACKLANE_MAX_429_RETRIES = '1';
+  process.env.SLK_RUNTIME_DIR = runtimeDir;
+  process.env.SLK_MIN_REQUEST_INTERVAL_MS = '25';
+  process.env.SLK_MAX_429_RETRIES = '1';
 
   global.fetch = fetchImpl;
-  globalThis.__SLACKLANE_TEST_HOOKS__ = {
+  globalThis.__SLK_TEST_HOOKS__ = {
     getCredentials: () => ({ token: 'token-123', cookie: 'cookie-123' }),
     refresh: refreshImpl || (() => {}),
   };
@@ -56,7 +56,7 @@ test('slackApi persists shared cooldown after HTTP 429 and retries once', async 
   assert.equal(state.lastDelayMs, 1000);
   assert.ok(state.nextAllowedAt > Date.now() - 100);
 
-  delete globalThis.__SLACKLANE_TEST_HOOKS__;
+  delete globalThis.__SLK_TEST_HOOKS__;
 });
 
 test('slackApi still refreshes and retries once on invalid_auth', async () => {
@@ -83,5 +83,5 @@ test('slackApi still refreshes and retries once on invalid_auth', async () => {
   assert.equal(refreshCalls, 1);
   assert.equal(calls, 2);
 
-  delete globalThis.__SLACKLANE_TEST_HOOKS__;
+  delete globalThis.__SLK_TEST_HOOKS__;
 });

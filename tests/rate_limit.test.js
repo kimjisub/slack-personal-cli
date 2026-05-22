@@ -13,14 +13,14 @@ import {
 } from '../src/rate_limit.js';
 
 function makeRuntimeDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'slacklane-rate-limit-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'slk-rate-limit-'));
 }
 
-test('getRuntimeDir uses SLACKLANE_RUNTIME_DIR when set', () => {
+test('getRuntimeDir uses SLK_RUNTIME_DIR when set', () => {
   const runtimeDir = makeRuntimeDir();
-  process.env.SLACKLANE_RUNTIME_DIR = runtimeDir;
+  process.env.SLK_RUNTIME_DIR = runtimeDir;
   assert.equal(getRuntimeDir(), runtimeDir);
-  delete process.env.SLACKLANE_RUNTIME_DIR;
+  delete process.env.SLK_RUNTIME_DIR;
 });
 
 test('readRateLimitState returns default shape when state file does not exist', () => {

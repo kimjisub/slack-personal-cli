@@ -6,12 +6,12 @@ import { getCredentials as getCredentialsFromAuth, refresh as refreshFromAuth } 
 import { applySharedCooldown, sleep, withRateLimitSlot } from "./rate_limit.js";
 
 const BASE = "https://slack.com/api";
-const MAX_429_RETRIES = Number(process.env.SLACKLANE_MAX_429_RETRIES || process.env.SLK_MAX_429_RETRIES || 2);
-const MIN_REQUEST_INTERVAL_MS = Number(process.env.SLACKLANE_MIN_REQUEST_INTERVAL_MS || process.env.SLK_MIN_REQUEST_INTERVAL_MS || 1200);
-const DEBUG_RATE_LIMIT = process.env.SLACKLANE_DEBUG_RATE_LIMIT || process.env.SLK_DEBUG_RATE_LIMIT === '1';
+const MAX_429_RETRIES = Number(process.env.SLK_MAX_429_RETRIES || process.env.SLACKLANE_MAX_429_RETRIES || 2);
+const MIN_REQUEST_INTERVAL_MS = Number(process.env.SLK_MIN_REQUEST_INTERVAL_MS || process.env.SLACKLANE_MIN_REQUEST_INTERVAL_MS || 1200);
+const DEBUG_RATE_LIMIT = process.env.SLK_DEBUG_RATE_LIMIT === '1' || process.env.SLACKLANE_DEBUG_RATE_LIMIT === '1';
 
 function getAuthFns() {
-  const hooks = globalThis.__SLACKLANE_TEST_HOOKS__;
+  const hooks = globalThis.__SLK_TEST_HOOKS__;
   return {
     getCredentials: hooks?.getCredentials || getCredentialsFromAuth,
     refresh: hooks?.refresh || refreshFromAuth,
@@ -98,7 +98,7 @@ export async function slackApi(method, params = {}) {
         const delayMs = getRetryAfterMs(res);
         applySharedCooldown(delayMs);
         if (DEBUG_RATE_LIMIT) {
-          console.error(`[slacklane rate-limit] 429 on ${method}; retrying after ${delayMs}ms`);
+          console.error(`[slk rate-limit] 429 on ${method}; retrying after ${delayMs}ms`);
         }
         if (rateLimitRetries >= MAX_429_RETRIES) {
           return { ok: false, error: 'rate_limited', retry_after_ms: delayMs };

@@ -1,17 +1,17 @@
 {
-  "name": "slacklane",
+  "name": "slack-personal-cli",
   "version": "0.3.0",
-  "description": "Slack desktop-session CLI for agent workflows on macOS",
+  "description": "Session-based Slack CLI for personal accounts \u2014 no bot token or OAuth app required.",
   "type": "module",
   "license": "MIT",
   "author": "Kim Jisub",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kimjisub/slacklane.git"
+    "url": "git+https://github.com/kimjisub/slack-personal-cli.git"
   },
-  "homepage": "https://github.com/kimjisub/slacklane",
+  "homepage": "https://github.com/kimjisub/slack-personal-cli",
   "bugs": {
-    "url": "https://github.com/kimjisub/slacklane/issues"
+    "url": "https://github.com/kimjisub/slack-personal-cli/issues"
   },
   "keywords": [
     "slack",
@@ -25,8 +25,9 @@
     "messaging"
   ],
   "bin": {
-    "slacklane": "bin/slacklane.js",
-    "slk": "bin/slacklane.js"
+    "slack-personal-cli": "bin/slk.js",
+    "slk": "bin/slk.js",
+    "slacklane": "bin/slk.js"
   },
   "files": [
     "bin/",
@@ -38,7 +39,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "dev": "node bin/slacklane.js",
+    "dev": "node bin/slk.js",
     "test": "node --test",
     "test:live": "node --test tests/live-slack.test.js"
   },

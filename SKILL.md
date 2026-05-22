@@ -1,11 +1,11 @@
 ---
 name: slack-personal
-description: Read, send, search, and manage Slack messages and DMs via the slacklane CLI. Supports multiple workspaces with switching. Use when the user asks to check Slack, read channels or DMs, send Slack messages, search Slack, check unreads, manage drafts, view saved items, switch Slack workspaces, or interact with Slack workspace. Also use for heartbeat Slack checks. Triggers on "check slack", "any slack messages", "send on slack", "slack unreads", "search slack", "slack threads", "draft on slack", "read slack dms", "message on slack", "switch workspace", "slack workspaces".
-homepage: https://www.npmjs.com/package/slacklane
-metadata: {"moltbot":{"emoji":"💬","requires":{"bins":["slacklane","slk"]},"install":[{"id":"npm","kind":"node","package":"slacklane","bins":["slacklane","slk"],"label":"Install slacklane (npm)"}],"os":["darwin"]}}
+description: Read, send, search, and manage Slack messages and DMs via the slk CLI. Supports multiple workspaces with switching. Use when the user asks to check Slack, read channels or DMs, send Slack messages, search Slack, check unreads, manage drafts, view saved items, switch Slack workspaces, or interact with Slack workspace. Also use for heartbeat Slack checks. Triggers on "check slack", "any slack messages", "send on slack", "slack unreads", "search slack", "slack threads", "draft on slack", "read slack dms", "message on slack", "switch workspace", "slack workspaces".
+homepage: https://www.npmjs.com/package/slack-personal-cli
+metadata: {"moltbot":{"emoji":"💬","requires":{"bins":["slack-personal-cli","slk"]},"install":[{"id":"npm","kind":"node","package":"slack-personal-cli","bins":["slack-personal-cli","slk"],"label":"Install slack-personal-cli (npm)"}],"os":["darwin"]}}
 ---
 
-# slacklane — Slack CLI
+# slack-personal-cli — Slack CLI
 
 Session-based Slack CLI for macOS. Auto-authenticates from the Slack desktop app — no tokens, no OAuth, no app installs. Acts as your user (`xoxc-` session tokens).
 
@@ -13,59 +13,59 @@ Session-based Slack CLI for macOS. Auto-authenticates from the Slack desktop app
 
 ```bash
 # Auth
-slacklane auth                              # Test authentication, show user/team
+slk auth                              # Test authentication, show user/team
 
 # Core read/write
-slacklane channels                          # List channels (alias: ch)
-slacklane dms                               # List DM conversations with IDs (alias: dm)
-slacklane users                             # List workspace users (alias: u)
-slacklane read <channel> [count]            # Read recent messages, default 20 (alias: r)
-slacklane read @username [count]            # Read DMs by username
-slacklane read <channel> --threads          # Auto-expand all threads
-slacklane read <channel> --from 2026-02-01  # Date range filter
-slacklane thread <channel> <ts> [count]     # Read thread replies, default 50 (alias: t)
-slacklane search <query> [count]            # Search messages across workspace
-slacklane send <channel> <message>          # Send a message (alias: s)
-slacklane send <channel> <message> --thread <ts>  # Send into an existing thread
-slacklane react <channel> <ts> <emoji>      # React to a message
-slacklane reply <channel> <ts> <message>    # Reply to a thread root or thread message
-slacklane message link <channel> <ts>       # Print the Slack permalink for one message
-slacklane message show <channel> <ts>       # Show one exact message
-slacklane message context <channel> <ts> [before] [after]  # Show nearby context
+slk channels                          # List channels (alias: ch)
+slk dms                               # List DM conversations with IDs (alias: dm)
+slk users                             # List workspace users (alias: u)
+slk read <channel> [count]            # Read recent messages, default 20 (alias: r)
+slk read @username [count]            # Read DMs by username
+slk read <channel> --threads          # Auto-expand all threads
+slk read <channel> --from 2026-02-01  # Date range filter
+slk thread <channel> <ts> [count]     # Read thread replies, default 50 (alias: t)
+slk search <query> [count]            # Search messages across workspace
+slk send <channel> <message>          # Send a message (alias: s)
+slk send <channel> <message> --thread <ts>  # Send into an existing thread
+slk react <channel> <ts> <emoji>      # React to a message
+slk reply <channel> <ts> <message>    # Reply to a thread root or thread message
+slk message link <channel> <ts>       # Print the Slack permalink for one message
+slk message show <channel> <ts>       # Show one exact message
+slk message context <channel> <ts> [before] [after]  # Show nearby context
 
 # Preferred workspace family
-slacklane workspace list                    # List all logged-in workspaces
-slacklane workspace use <name|domain|id>    # Switch active workspace
-slacklane workspace current                 # Show the current workspace
+slk workspace list                    # List all logged-in workspaces
+slk workspace use <name|domain|id>    # Switch active workspace
+slk workspace current                 # Show the current workspace
 
 # Preferred inbox family
-slacklane inbox activity                    # All channels with unread/mention counts
-slacklane inbox unread                      # Only unreads, excludes muted
-slacklane inbox saved [count] [--all]       # Saved for later items
-slacklane inbox starred                     # VIP users + starred items
-slacklane channel pins <channel>            # Pinned items in a channel
+slk inbox activity                    # All channels with unread/mention counts
+slk inbox unread                      # Only unreads, excludes muted
+slk inbox saved [count] [--all]       # Saved for later items
+slk inbox starred                     # VIP users + starred items
+slk channel pins <channel>            # Pinned items in a channel
 
 # Preferred drafts family (synced to Slack editor UI)
-slacklane draft list                        # List active drafts
-slacklane draft channel <channel> <message> # Draft a channel message
-slacklane draft thread <ch> <ts> <message>  # Draft a thread reply
-slacklane draft dm <user_id|@username> <message>  # Draft a DM
-slacklane draft drop <draft_id>             # Delete a draft
+slk draft list                        # List active drafts
+slk draft channel <channel> <message> # Draft a channel message
+slk draft thread <ch> <ts> <message>  # Draft a thread reply
+slk draft dm <user_id|@username> <message>  # Draft a DM
+slk draft drop <draft_id>             # Delete a draft
 
 # Legacy compatibility aliases
-slacklane workspaces                        # Alias: workspace list (alias: ws)
-slacklane switch <name|domain|id>           # Alias: workspace use (alias: sw)
-slacklane activity                          # Alias: inbox activity (alias: a)
-slacklane unread                            # Alias: inbox unread (alias: ur)
-slacklane starred                           # Alias: inbox starred (alias: star)
-slacklane saved [count] [--all]             # Alias: inbox saved (alias: sv)
-slacklane pins <channel>                    # Alias: channel pins (alias: pin)
-slacklane drafts                            # Alias: draft list
-slacklane draft <channel> <message>         # Alias: draft channel
-slacklane draft user <user_id> <message>    # Alias: draft dm
-slacklane permalink <channel> <ts>          # Alias: message link
-slacklane show <channel> <ts>               # Alias: message show
-slacklane context <channel> <ts> [before] [after]  # Alias: message context
+slk workspaces                        # Alias: workspace list (alias: ws)
+slk switch <name|domain|id>           # Alias: workspace use (alias: sw)
+slk activity                          # Alias: inbox activity (alias: a)
+slk unread                            # Alias: inbox unread (alias: ur)
+slk starred                           # Alias: inbox starred (alias: star)
+slk saved [count] [--all]             # Alias: inbox saved (alias: sv)
+slk pins <channel>                    # Alias: channel pins (alias: pin)
+slk drafts                            # Alias: draft list
+slk draft <channel> <message>         # Alias: draft channel
+slk draft user <user_id> <message>    # Alias: draft dm
+slk permalink <channel> <ts>          # Alias: message link
+slk show <channel> <ts>               # Alias: message show
+slk context <channel> <ts> [before] [after]  # Alias: message context
 ```
 
 Channel accepts name (`general`), ID (`C08A8AQ2AFP`), `@username` for DMs, or user ID (`U07RQTFCLUC`).
@@ -77,16 +77,16 @@ Automatic — extracts session tokens from Slack desktop app's LevelDB (`localCo
 **First run:** macOS will show a Keychain dialog asking to allow access to "Slack Safe Storage":
 - **Allow** — one-time access, prompted again next time
 - **Always Allow** — permanent, no future prompts (convenient but any process running as your user can extract credentials silently)
-- **Deny** — blocks access, slacklane cannot authenticate
+- **Deny** — blocks access, slk cannot authenticate
 
-**Token cache:** `~/.local/slacklane/token-cache.json` — auto-validated, auto-refreshed on `invalid_auth`.
-**Active workspace:** `~/.local/slacklane/active-workspace` — stores the selected team ID. Delete to reset to default.
-**Runtime coordination:** `~/.local/slacklane/runtime/` — shared pacing + 429 cooldown state for concurrent local `slacklane` processes.
+**Token cache:** `~/.local/slack-personal-cli/token-cache.json` — auto-validated, auto-refreshed on `invalid_auth`.
+**Active workspace:** `~/.local/slack-personal-cli/active-workspace` — stores the selected team ID. Delete to reset to default.
+**Runtime coordination:** `~/.local/slack-personal-cli/runtime/` — shared pacing + 429 cooldown state for concurrent local `slk` processes.
 
 If auth fails (token rotated, Slack logged out):
 ```bash
-rm ~/.local/slacklane/token-cache.json
-slacklane auth
+rm ~/.local/slack-personal-cli/token-cache.json
+slk auth
 ```
 
 Slack desktop app must be installed and logged in. Does not need to be running if token is cached.
@@ -96,15 +96,15 @@ Slack desktop app must be installed and logged in. Does not need to be running i
 All workspaces logged in to the Slack desktop app are available. Tokens are extracted from `localConfig_v2` in LevelDB.
 
 ```bash
-slacklane workspace list                    # List all workspaces (shows ← active marker)
-slacklane workspace current                 # Show the current selection / default
-slacklane workspace use candid              # Switch by name (fuzzy match)
-slacklane workspace use unipad-team         # Switch by domain
-slacklane workspace use T05BFH4UW5T         # Switch by team ID
-slacklane auth                              # Verify current workspace
+slk workspace list                    # List all workspaces (shows ← active marker)
+slk workspace current                 # Show the current selection / default
+slk workspace use candid              # Switch by name (fuzzy match)
+slk workspace use unipad-team         # Switch by domain
+slk workspace use T05BFH4UW5T         # Switch by team ID
+slk auth                              # Verify current workspace
 ```
 
-Legacy aliases `slacklane workspaces` and `slacklane switch ...` still work, but the `workspace ...` family is the canonical surface.
+Legacy aliases `slk workspaces` and `slk switch ...` still work, but the `workspace ...` family is the canonical surface.
 
 The `workspace use` command matches against workspace name, domain, or team ID (case-insensitive, partial match supported). After switching, all subsequent commands operate on the selected workspace until switched again.
 
@@ -113,48 +113,48 @@ The `workspace use` command matches against workspace name, domain, or team ID (
 Threads require a Slack timestamp. Use `--ts` to get it, then read the thread or act on one exact message:
 
 ```bash
-slacklane read general 10 --ts
+slk read general 10 --ts
 # Output: [1/30/2026, 11:41 AM ts:1769753479.788949] User [3 replies]: ...
 
-slacklane thread general 1769753479.788949
-slacklane reply general 1769753479.788949 "on it"
-slacklane send general "same effect via send" --thread 1769753479.788949
-slacklane message link general 1769753479.788949
-slacklane message show general 1769753479.788949
-slacklane message context general 1769753479.788949 2 2
+slk thread general 1769753479.788949
+slk reply general 1769753479.788949 "on it"
+slk send general "same effect via send" --thread 1769753479.788949
+slk message link general 1769753479.788949
+slk message show general 1769753479.788949
+slk message context general 1769753479.788949 2 2
 ```
 
 ## Agent Workflow Examples
 
-- **Heartbeat/cron unread check** — `slacklane inbox unread` → `slacklane read <channel>` for channels that need attention
-- **Save & pick up** — Human saves threads in Slack ("Save for later"). Agent runs `slacklane inbox saved` during heartbeat, reads full threads with `slacklane thread`, summarizes or extracts action items
-- **Daily channel digest** — `slacklane read <channel> 100` across key channels → compile decisions, open questions, action items → `slacklane send daily-digest "📋 ..."`
-- **Weekly DM summary** — `slacklane read @boss 200 --from 2026-02-01 --threads` → extract action items, decisions, context
-- **Thread monitoring** — `slacklane thread <channel> <ts>` to inspect the thread, then `slacklane reply <channel> <ts> "..."` or `slacklane send <channel> "..." --thread <ts>` to answer in place
-- **Message-level navigation** — `slacklane message link <channel> <ts>` for the permalink, `slacklane message show <channel> <ts>` for the exact item, `slacklane message context <channel> <ts>` for surrounding context
-- **Draft for human review** — `slacklane draft channel <channel> "..."` posts to Slack's editor UI for human to review before sending
-- **Search-driven context** — `slacklane search "deployment process"` or `slacklane channel pins <channel>` to pull context before answering questions
-- **Concurrent local automation** — Multiple agents or cron jobs can invoke `slacklane` safely; requests are paced through one shared local runtime lane and 429 cooldowns propagate automatically
+- **Heartbeat/cron unread check** — `slk inbox unread` → `slk read <channel>` for channels that need attention
+- **Save & pick up** — Human saves threads in Slack ("Save for later"). Agent runs `slk inbox saved` during heartbeat, reads full threads with `slk thread`, summarizes or extracts action items
+- **Daily channel digest** — `slk read <channel> 100` across key channels → compile decisions, open questions, action items → `slk send daily-digest "📋 ..."`
+- **Weekly DM summary** — `slk read @boss 200 --from 2026-02-01 --threads` → extract action items, decisions, context
+- **Thread monitoring** — `slk thread <channel> <ts>` to inspect the thread, then `slk reply <channel> <ts> "..."` or `slk send <channel> "..." --thread <ts>` to answer in place
+- **Message-level navigation** — `slk message link <channel> <ts>` for the permalink, `slk message show <channel> <ts>` for the exact item, `slk message context <channel> <ts>` for surrounding context
+- **Draft for human review** — `slk draft channel <channel> "..."` posts to Slack's editor UI for human to review before sending
+- **Search-driven context** — `slk search "deployment process"` or `slk channel pins <channel>` to pull context before answering questions
+- **Concurrent local automation** — Multiple agents or cron jobs can invoke `slk` safely; requests are paced through one shared local runtime lane and 429 cooldowns propagate automatically
 
 ## Live Slack integration tests
 
 The repo now supports opt-in real-Slack integration tests in `tests/live-slack.test.js`.
 
-- Default `npm test` remains safe because the live file auto-skips unless `SLACKLANE_LIVE_TESTS=1` is set.
+- Default `npm test` remains safe because the live file auto-skips unless `SLK_LIVE_TESTS=1` is set.
 - Read-only live verification requires:
-  - `SLACKLANE_LIVE_TESTS=1`
-  - `SLACKLANE_LIVE_CHANNEL`
-  - `SLACKLANE_LIVE_MESSAGE_TS`
+  - `SLK_LIVE_TESTS=1`
+  - `SLK_LIVE_CHANNEL`
+  - `SLK_LIVE_MESSAGE_TS`
 - Write verification additionally requires:
-  - `SLACKLANE_LIVE_ALLOW_WRITE=1`
-  - `SLACKLANE_LIVE_THREAD_TS`
+  - `SLK_LIVE_ALLOW_WRITE=1`
+  - `SLK_LIVE_THREAD_TS`
 
 Run:
 
 ```bash
 npm test
-SLACKLANE_LIVE_TESTS=1 SLACKLANE_LIVE_CHANNEL=general SLACKLANE_LIVE_MESSAGE_TS=1769753479.788949 npm run test:live
-SLACKLANE_LIVE_TESTS=1 SLACKLANE_LIVE_ALLOW_WRITE=1 SLACKLANE_LIVE_CHANNEL=general SLACKLANE_LIVE_MESSAGE_TS=1769753479.788949 SLACKLANE_LIVE_THREAD_TS=1769753479.788949 npm run test:live
+SLK_LIVE_TESTS=1 SLK_LIVE_CHANNEL=general SLK_LIVE_MESSAGE_TS=1769753479.788949 npm run test:live
+SLK_LIVE_TESTS=1 SLK_LIVE_ALLOW_WRITE=1 SLK_LIVE_CHANNEL=general SLK_LIVE_MESSAGE_TS=1769753479.788949 SLK_LIVE_THREAD_TS=1769753479.788949 npm run test:live
 ```
 
 The write tests intentionally require a second opt-in so they do not post to Slack by accident.
@@ -168,4 +168,4 @@ The write tests intentionally require a second opt-in so they do not post to Sla
 
 ## Missing Features & Issues
 
-Create PR or Report Issue at: https://github.com/kimjisub/slacklane
+Create PR or Report Issue at: https://github.com/kimjisub/slack-personal-cli
