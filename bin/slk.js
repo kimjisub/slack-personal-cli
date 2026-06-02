@@ -7,6 +7,7 @@
 import * as defaultCmd from "../src/commands.js";
 import * as defaultDrafts from "../src/drafts.js";
 import { pathToFileURL } from "node:url";
+import { realpathSync } from "node:fs";
 
 function buildHelp({ supportsEmoji = true } = {}) {
   const e = (emoji, fallback = "") => supportsEmoji ? `${emoji} ` : fallback;
@@ -279,7 +280,14 @@ async function main() {
   }
 }
 
-const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+// Resolve symlinks before comparing argv[1] to import.meta.url.
+// Global npm bins are symlinks (e.g. .../bin/slk → .../lib/node_modules/.../bin/slk.js),
+// and Node resolves ESM module URLs to the real path. Without realpath, the comparison
+// fails for the global `slk`, the guard skips main(), and the command exits silently.
+const argv1 = process.argv[1];
+const isMain =
+  argv1 &&
+  import.meta.url === pathToFileURL(realpathSync(argv1)).href;
 if (isMain) {
   main();
 }

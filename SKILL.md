@@ -1,13 +1,40 @@
 ---
 name: slack-personal
 description: Read, send, search, and manage Slack messages and DMs via the slk CLI. Supports multiple workspaces with switching. Use when the user asks to check Slack, read channels or DMs, send Slack messages, search Slack, check unreads, manage drafts, view saved items, switch Slack workspaces, or interact with Slack workspace. Also use for heartbeat Slack checks. Triggers on "check slack", "any slack messages", "send on slack", "slack unreads", "search slack", "slack threads", "draft on slack", "read slack dms", "message on slack", "switch workspace", "slack workspaces".
-homepage: https://www.npmjs.com/package/slack-personal-cli
-metadata: {"moltbot":{"emoji":"💬","requires":{"bins":["slk"]},"install":[{"id":"npm","kind":"node","package":"slack-personal-cli","bins":["slk"],"label":"Install slack-personal-cli (npm)"}],"os":["darwin"]}}
+homepage: https://github.com/kimjisub/slack-personal-cli
+metadata: {"moltbot":{"emoji":"💬","requires":{"bins":["slk"]},"install":[{"id":"npm","kind":"node","package":"github:kimjisub/slack-personal-cli","bins":["slk"],"label":"Install slack-personal-cli from GitHub"}],"os":["darwin"]}}
 ---
 
 # slack-personal-cli — Slack CLI
 
 Session-based Slack CLI for macOS. Auto-authenticates from the Slack desktop app — no tokens, no OAuth, no app installs. Acts as your user (`xoxc-` session tokens).
+
+## Install
+
+The package is installed **directly from GitHub** — it is not published to the npm registry. Requires Node.js ≥ 18 and macOS with the Slack desktop app installed and logged in.
+
+```bash
+npm install -g github:kimjisub/slack-personal-cli
+```
+
+Verify:
+
+```bash
+slk auth
+```
+
+### How to invoke
+
+**Always call the CLI as `slk <command>`.** The global binary is on `PATH` and is the correct invocation path for every harness (Claude Code, Codex, Copilot CLI, Gemini CLI, plain shell).
+
+> **Do NOT use `node <path>/bin/slk.js` as a workaround.** That pattern was a necessary fallback only before v0.3.1, when a `process.argv[1]` vs `import.meta.url` mismatch caused the global `slk` to exit silently from symlinked installs. v0.3.1 resolves the symlink before comparing, so the global binary works correctly. If you see no output from `slk`, upgrade instead of falling back to `node`:
+>
+> ```bash
+> npm install -g github:kimjisub/slack-personal-cli
+> slk --version 2>/dev/null || slk auth
+> ```
+
+Reinstall (e.g. to pick up upstream changes) uses the same command — npm will refetch from GitHub.
 
 ## Commands
 

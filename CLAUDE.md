@@ -21,9 +21,9 @@ Slack CLI for macOS. Auto-auth from Slack desktop app (session cookies, no bot i
 5. Update `README.md` (commands table, examples, flags if any)
 6. Update `SKILL.md` (commands list)
 7. `npm version patch --no-git-tag-version`
-8. `git add -A && git commit -m "feat: ..." && git push`
-9. `echo "//registry.npmjs.org/:_authToken=${NPM_PUBLISH_TOKEN}" > .npmrc && npm publish && rm .npmrc`
-10. `cp SKILL.md ~/moltbot/skills/slack-personal-cli/SKILL.md`
+8. `git add -A && git commit -m "feat: ..." && git push`  ← release; users install via `npm install -g github:kimjisub/slack-personal-cli`
+9. (optional) `git tag v$(node -p "require('./package.json').version") && git push --tags`
+10. (optional, downstream skill mirrors) `cp SKILL.md ~/.claude/skills/slack-personal/SKILL.md`
 
 ## Testing
 
@@ -54,6 +54,12 @@ All workspace tokens are stored in `localConfig_v2` inside LevelDB (Snappy-compr
 - `listWorkspaces()` / `setActiveWorkspace()` / `getCredentialsForTeam()` — workspace CRUD
 - `getCredentials()` checks active workspace first, then falls back to cache → localConfig → LevelDB/IndexedDB scan
 
-## npm Publish Token
+## Distribution
 
-`NPM_PUBLISH_TOKEN` env var from `~/.local/keys/env.sh`. Use `.npmrc` trick (create before publish, delete after).
+Not published to npm. Installs come straight from the GitHub repo:
+
+```bash
+npm install -g github:kimjisub/slack-personal-cli
+```
+
+`git push` is the release step. No npm token, no `.npmrc`.

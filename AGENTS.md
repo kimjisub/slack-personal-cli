@@ -96,24 +96,31 @@ Commit message prefixes:
 - `docs:` — documentation only
 - `refactor:` — code change that doesn't add/fix
 
-### 7. Publish to npm
+### 7. Release
+
+This project is **not published to npm**. Installs go directly from GitHub:
 
 ```bash
-# Create .npmrc with publish token
-echo "//registry.npmjs.org/:_authToken=${NPM_PUBLISH_TOKEN}" > .npmrc
-npm publish
-rm .npmrc   # Clean up — don't commit the token!
+npm install -g github:kimjisub/slack-personal-cli
 ```
 
-The `NPM_PUBLISH_TOKEN` env var is set in `~/.local/keys/env.sh`.
-
-### 8. Update Local Moltbot Skill
+So the "release" is just `git push`. Users (and `npm install -g github:...`) always fetch the default branch's tip. Optionally tag the release for changelog tracking:
 
 ```bash
-cp SKILL.md ~/moltbot/skills/slack-personal-cli/SKILL.md
+git tag v$(node -p "require('./package.json').version")
+git push --tags
 ```
 
-This ensures Moltbot's local skill stays in sync with the published version.
+### 8. Update Downstream Skill Copies (optional)
+
+If you maintain local skill mirrors (e.g. Moltbot, Claude Code user-level skills) that hold a snapshot of `SKILL.md` separate from the repo, sync them:
+
+```bash
+cp SKILL.md ~/moltbot/skills/slack-personal-cli/SKILL.md          # Moltbot
+cp SKILL.md ~/.claude/skills/slack-personal/SKILL.md              # Claude Code (user)
+```
+
+These copies exist only when a harness can't load `SKILL.md` directly from the installed npm package or git repo. Skip if not applicable.
 
 ## Quick Reference: One-liner Full Deploy
 
@@ -122,8 +129,9 @@ cd ~/Lab/slack-personal-cli
 # ... make changes ...
 npm version patch --no-git-tag-version
 git add -A && git commit -m "feat: description" && git push
-echo "//registry.npmjs.org/:_authToken=${NPM_PUBLISH_TOKEN}" > .npmrc && npm publish && rm .npmrc
-cp SKILL.md ~/moltbot/skills/slack-personal-cli/SKILL.md
+git tag v$(node -p "require('./package.json').version") && git push --tags
+# (optional) sync downstream skill copies
+cp SKILL.md ~/.claude/skills/slack-personal/SKILL.md
 ```
 
 ## API Notes

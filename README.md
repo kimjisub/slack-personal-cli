@@ -18,14 +18,16 @@ A macOS Slack CLI built for agent workflows.
 
 ## Install
 
+`slack-personal-cli` is **installed directly from GitHub** — it is not published to the npm registry. The repo IS the package.
+
 ```bash
-npm install -g slack-personal-cli
+npm install -g github:kimjisub/slack-personal-cli
 ```
 
-Or run it one-off:
+Or one-off via npx:
 
 ```bash
-npx slack-personal-cli slk auth
+npx -y github:kimjisub/slack-personal-cli slk auth
 ```
 
 Requirements:
@@ -33,10 +35,13 @@ Requirements:
 - Slack desktop app installed and logged in
 - Node.js 18+
 
+After install, invoke as `slk <command>`. The global binary works correctly from v0.3.1+ (see [Troubleshooting](#troubleshooting) below for older versions).
+
 ### Local development install
 
 ```bash
-cd /path/to/slack-personal-cli
+git clone https://github.com/kimjisub/slack-personal-cli.git
+cd slack-personal-cli
 npm link
 ```
 
@@ -46,11 +51,22 @@ To remove the global symlink later:
 npm unlink -g slack-personal-cli
 ```
 
-If you want a one-time install from the checked-out repo instead:
+Or install a one-shot snapshot from the checkout:
 
 ```bash
 npm install -g .
 ```
+
+### Troubleshooting: `slk` is silent (exit 0, no output)
+
+You are on a pre-0.3.1 version. The previous main-module guard compared `process.argv[1]` to `import.meta.url` directly, which never matched for symlinked global bins, so `main()` was never invoked. Fix:
+
+```bash
+npm install -g github:kimjisub/slack-personal-cli
+slk auth
+```
+
+Do **not** work around this with `node $(npm root -g)/slack-personal-cli/bin/slk.js …` — install the patched version instead.
 
 ## Quickstart
 
