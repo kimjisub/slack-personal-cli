@@ -7,7 +7,7 @@
 import * as defaultCmd from "../src/commands.js";
 import * as defaultDrafts from "../src/drafts.js";
 import { pathToFileURL } from "node:url";
-import { realpathSync } from "node:fs";
+import { realpathSync, readFileSync } from "node:fs";
 
 function buildHelp({ supportsEmoji = true } = {}) {
   const e = (emoji, fallback = "") => supportsEmoji ? `${emoji} ` : fallback;
@@ -51,6 +51,7 @@ Settings:
   --to YYYY-MM-DD                        Read messages until this date
   --all                                  Include completed items in saved views
   --no-emoji                             Disable emoji output (or set NO_EMOJI=1)
+  --version, -v                          Print the CLI version
 
 Channels: name ("general"), ID ("C08A8AQ2AFP"), @username, or user ID ("U...").
 DMs: use @username or user ID to send/read DMs. Aliases shown in parens.
@@ -255,6 +256,15 @@ export async function runCli(rawArgs = process.argv.slice(2), deps = {}) {
         return drafts.dropDraft(args[2]);
       }
       return usageError(consoleObj, exit, "Usage: slk draft <list|channel|thread|dm|drop> ...");
+    }
+
+    case "version":
+    case "-v":
+    case "--version": {
+      const pkgUrl = new URL("../package.json", import.meta.url);
+      const { version } = JSON.parse(readFileSync(pkgUrl, "utf8"));
+      consoleObj.log(`slk ${version}`);
+      return;
     }
 
     case "help":

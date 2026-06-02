@@ -11,7 +11,11 @@ Session-based Slack CLI for macOS. Auto-authenticates from the Slack desktop app
 
 ## Install
 
-The package is installed **directly from GitHub** — it is not published to the npm registry. Requires Node.js ≥ 18 and macOS with the Slack desktop app installed and logged in.
+Two steps. **Both are required** — installing the CLI alone does not register the skill, and copying `SKILL.md` alone does not give the agent a `slk` binary to call.
+
+### Step 1 — Install the `slk` CLI on PATH
+
+Direct from GitHub (this repo is the package; it is **not** published to the npm registry). Requires Node.js ≥ 18 and macOS with the Slack desktop app installed and logged in.
 
 ```bash
 npm install -g github:kimjisub/slack-personal-cli
@@ -20,21 +24,41 @@ npm install -g github:kimjisub/slack-personal-cli
 Verify:
 
 ```bash
-slk auth
+slk --version   # → slk 0.4.0 (or newer)
+slk auth        # prints authenticated user / workspace
+```
+
+Reinstall to pick up upstream changes uses the same command — npm refetches from GitHub.
+
+### Step 2 — Register `SKILL.md` with your harness
+
+The CLI is on PATH; now your AI harness needs to know the skill exists. Drop this `SKILL.md` into the harness's skill directory:
+
+| Harness | Skill path |
+|---|---|
+| Claude Code (user-level) | `~/.claude/skills/slack-personal/SKILL.md` |
+| Claude Code (project-level) | `<repo>/.claude/skills/slack-personal/SKILL.md` |
+| Codex / Copilot CLI / Gemini CLI | refer to that harness's skill directory — the `SKILL.md` format is portable, only the install location differs |
+
+Agent-friendly one-liner (covers both steps; Claude Code user-level shown):
+
+```bash
+npm install -g github:kimjisub/slack-personal-cli && \
+mkdir -p ~/.claude/skills/slack-personal && \
+curl -sL https://raw.githubusercontent.com/kimjisub/slack-personal-cli/main/SKILL.md \
+  -o ~/.claude/skills/slack-personal/SKILL.md
 ```
 
 ### How to invoke
 
 **Always call the CLI as `slk <command>`.** The global binary is on `PATH` and is the correct invocation path for every harness (Claude Code, Codex, Copilot CLI, Gemini CLI, plain shell).
 
-> **Do NOT use `node <path>/bin/slk.js` as a workaround.** That pattern was a necessary fallback only before v0.3.1, when a `process.argv[1]` vs `import.meta.url` mismatch caused the global `slk` to exit silently from symlinked installs. v0.3.1 resolves the symlink before comparing, so the global binary works correctly. If you see no output from `slk`, upgrade instead of falling back to `node`:
+> **Do NOT use `node <path>/bin/slk.js` as a workaround.** That pattern was a necessary fallback only before v0.3.1, when a `process.argv[1]` vs `import.meta.url` mismatch caused the global `slk` to exit silently from symlinked installs. v0.3.1+ resolves the symlink before comparing, so the global binary works correctly. If `slk` produces no output, upgrade instead of falling back to `node`:
 >
 > ```bash
-> npm install -g github:kimjisub/slack-personal-cli
-> slk --version 2>/dev/null || slk auth
+> slk --version           # confirms which version is on PATH
+> npm install -g github:kimjisub/slack-personal-cli   # upgrades from main
 > ```
-
-Reinstall (e.g. to pick up upstream changes) uses the same command — npm will refetch from GitHub.
 
 ## Commands
 

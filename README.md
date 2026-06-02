@@ -57,11 +57,30 @@ Or install a one-shot snapshot from the checkout:
 npm install -g .
 ```
 
+### Install as an AI agent skill
+
+The CLI alone is not enough for an AI harness (Claude Code, Codex, Copilot CLI, Gemini CLI) to discover the skill. Two steps:
+
+1. Install the CLI on PATH (above).
+2. Drop `SKILL.md` into your harness's skill directory.
+
+For Claude Code (user-level), the agent-friendly one-liner covers both:
+
+```bash
+npm install -g github:kimjisub/slack-personal-cli && \
+mkdir -p ~/.claude/skills/slack-personal && \
+curl -sL https://raw.githubusercontent.com/kimjisub/slack-personal-cli/main/SKILL.md \
+  -o ~/.claude/skills/slack-personal/SKILL.md
+```
+
+For project-scoped Claude Code skills, use `<repo>/.claude/skills/slack-personal/SKILL.md` instead. For other harnesses, refer to their skill registration docs — the `SKILL.md` format itself is portable.
+
 ### Troubleshooting: `slk` is silent (exit 0, no output)
 
 You are on a pre-0.3.1 version. The previous main-module guard compared `process.argv[1]` to `import.meta.url` directly, which never matched for symlinked global bins, so `main()` was never invoked. Fix:
 
 ```bash
+slk --version            # check which version is on PATH (0.4.0+ is current)
 npm install -g github:kimjisub/slack-personal-cli
 slk auth
 ```
