@@ -9,6 +9,8 @@ metadata: {"moltbot":{"emoji":"💬","requires":{"bins":["slk"]},"install":[{"id
 
 Session-based Slack CLI for macOS. Auto-authenticates from the Slack desktop app — no tokens, no OAuth, no app installs. Acts as your user (`xoxc-` session tokens).
 
+**vs other Slack options:** unlike the official Slack MCP (`slackapi/slack-mcp-plugin`, OAuth, one workspace) or `korotovsky/slack-mcp-server` (bring-your-own `xoxc`/`xoxd`/`xoxp`/`xoxb` token, one workspace per token), `slk` needs **no token setup** and works across **all signed-in workspaces at once** (`-A`). It's a CLI, so a human and an agent (over Bash) use the same tool. Unique commands: `inbox -A` (cross-workspace unread digest), `owed` (mentions you haven't answered), `search -A`. macOS-only; full-account access. See README "How it compares" for the full table.
+
 ## Install
 
 Two steps. **Both are required** — installing the CLI alone does not register the skill, and copying `SKILL.md` alone does not give the agent a `slk` binary to call.

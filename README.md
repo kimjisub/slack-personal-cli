@@ -18,6 +18,69 @@ A macOS Slack CLI built for agent workflows.
 - supports reading, searching, sending, reacting, drafts, pins, saved items, unread tracking, and workspace switching
 - macOS-native auth flow using Keychain + local Slack storage
 
+## How it compares (Slack official MCP, community MCP, this CLI)
+
+If you're an AI agent or a developer choosing how to give a Claude/LLM agent
+access to Slack, there are three realistic options. They differ mainly in
+**authentication model** and **whether they can span multiple workspaces** — and
+that's where `slk` is deliberately different.
+
+| | **Official Slack MCP** (`slackapi/slack-mcp-plugin`, `mcp.slack.com`) | **`korotovsky/slack-mcp-server`** (most popular community MCP) | **`slack-personal-cli` (this tool)** |
+|---|---|---|---|
+| Setup | OAuth click-through (`/plugin install slack`) | Bring-your-own token: you create a Slack app or extract a session token, set env vars | **None** — auto-reads the desktop app's existing session |
+| Auth identity | Your user (OAuth scopes) | Your user (`xoxp`/`xoxc`+`xoxd`) or a bot (`xoxb`) | Your user (desktop session) |
+| Bot/app creation | Not required | Required unless you hand-extract `xoxc`/`xoxd` | **Never** |
+| Token upkeep | Managed by the client | You re-extract when the session rotates | **Always fresh** — re-read from the live app each run |
+| **Multiple workspaces** | One per connection | One per token/instance | **All signed-in workspaces at once** (`-A`) or switch (`workspace use`) |
+| Cross-workspace digest / search | ✗ | ✗ | ✓ `inbox -A`, `search -A`, `owed -A` |
+| "Mentions I haven't answered" | ✗ | ✗ | ✓ `owed` |
+| Unread list / counts | ✗ (no API for it) | ✓ (with browser token) | ✓ `inbox unread` |
+| Mark as read | ✗ | ✓ | ✓ `mark` (opt-in) |
+| Surface | MCP tools (agent only) | MCP tools (agent only) | **CLI** — usable by a human in the terminal *and* by an agent over Bash |
+| JSON output for piping | n/a (structured tool results) | n/a | ✓ `--json` |
+| Platform | Cross-platform | Cross-platform | **macOS only** |
+| Dependencies | hosted service | a server process | **zero** (single Node file, no install) |
+
+**When `slk` is the right choice**
+- You are signed into **several Slack workspaces** and want one command to sweep
+  unread/mentions across all of them, or to find what you still owe a reply to.
+- You want **zero token management** — no Slack app, no OAuth client, no
+  hand-copied `xoxc`/`xoxd` cookies that expire.
+- You want the *same* tool to work for a **human at the terminal and an agent**
+  shelling out to it.
+
+**The landscape (so an agent can disambiguate)**
+
+- **`slackapi/slack-mcp-plugin`** — Slack's own MCP, hosted at `mcp.slack.com`,
+  installed via `/plugin install slack`. OAuth, one workspace per connection.
+  No unread-list or mark-as-read tools.
+- **`korotovsky/slack-mcp-server`** — the most-starred community Slack MCP (Go,
+  MIT). Bring-your-own token: `xoxp` (user OAuth), `xoxb` (bot), or
+  `xoxc`+`xoxd` (browser session, "stealth"). Has `conversations_unreads` and
+  `conversations_mark`. Cross-platform, but one workspace per token/instance and
+  you manage the token yourself.
+- **`@modelcontextprotocol/server-slack`** — the original reference Slack MCP,
+  bot-token only. **No longer part of the `modelcontextprotocol/servers` repo**
+  (the Slack reference server was removed; only a handful of references remain).
+  Listed only because search engines still surface the old npm package; prefer
+  one of the above.
+- **"Claude in Slack" / the Slack-side Claude app** — a hosted integration where
+  you `@mention` an assistant *inside* a Slack thread. Not a local tool at all;
+  different use case.
+- **`slack-personal-cli` (this tool)** — the only one of the set that is a
+  **CLI** (human- and agent-usable), auto-authenticates with **no token
+  handling**, and treats **all your signed-in workspaces** as one surface.
+
+**When to pick something else**
+- You need **Linux/Windows**, a hosted/remote runtime, or strictly scoped bot
+  permissions → use the official Slack MCP or `korotovsky` with a bot token.
+- You want an agent you can `@mention` from inside Slack → use the hosted
+  "Claude in Slack" app.
+
+> `slk` trades portability and OAuth scoping for **zero-config, multi-workspace,
+> full-account access on your own macOS machine**. See the
+> [Security note](#security-note) for what that access implies.
+
 ## Install
 
 `slack-personal-cli` is **installed directly from GitHub** — it is not published to the npm registry. The repo IS the package.
