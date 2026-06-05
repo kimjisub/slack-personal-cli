@@ -218,7 +218,12 @@ export async function runCli(rawArgs = process.argv.slice(2), deps = {}) {
     case "search": {
       if (!args[1]) return usageError(consoleObj, exit, "Usage: slk search <query> [count] [-w <ws> | -A]");
       const scopeArgs = hasScope ? [scope] : [];
-      return cmd.search(args.slice(1).join(" "), parseInt(args[args.length - 1], 10) || 20, ...scopeArgs);
+      // A trailing bare number is the result count, not part of the query.
+      const last = args[args.length - 1];
+      const hasCount = args.length > 2 && /^\d+$/.test(last);
+      const count = hasCount ? parseInt(last, 10) : 20;
+      const query = (hasCount ? args.slice(1, -1) : args.slice(1)).join(" ");
+      return cmd.search(query, count, ...scopeArgs);
     }
 
     case "owed": {

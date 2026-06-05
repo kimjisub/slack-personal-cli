@@ -96,3 +96,23 @@ test("search -A passes all-workspaces scope", async () => {
     ["cmd.search", "deploy", 20, { workspace: null, all: true }],
   ]);
 });
+
+test("search treats a trailing number as the count, not part of the query", async () => {
+  const cli = await loadCli();
+  {
+    const deps = makeDeps();
+    await cli.runCli(["search", "deploy", "5"], deps);
+    assert.deepEqual(deps.calls, [["cmd.search", "deploy", 5]]);
+  }
+  {
+    const deps = makeDeps();
+    await cli.runCli(["search", "deploy", "failed", "10"], deps);
+    assert.deepEqual(deps.calls, [["cmd.search", "deploy failed", 10]]);
+  }
+  {
+    // A lone numeric query is still a query, not a count.
+    const deps = makeDeps();
+    await cli.runCli(["search", "1234"], deps);
+    assert.deepEqual(deps.calls, [["cmd.search", "1234", 20]]);
+  }
+});
