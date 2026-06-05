@@ -466,3 +466,20 @@ export function getCredentialsForTeam(teamId) {
   saveTokenCache(team.token);
   return cachedCreds;
 }
+
+/**
+ * Credentials for every logged-in workspace, for cross-workspace fan-out.
+ * Reads localConfig + cookie once and does NOT touch the active-workspace cache,
+ * so concurrent callers don't clobber each other's credentials.
+ */
+export function getAllWorkspaceCredentials() {
+  const config = extractLocalConfig();
+  if (!config?.teams) {
+    throw new Error("Could not extract workspace list from Slack app data.");
+  }
+  const cookie = decryptCookie();
+  return Object.values(config.teams).map((team) => ({
+    team,
+    creds: { token: team.token, cookie },
+  }));
+}

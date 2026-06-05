@@ -167,19 +167,24 @@ slk draft dm @andrej "hey, can you take a look?"
 | `slk users` | `u` | List workspace users |
 | `slk read <channel> [count]` | `r` | Read recent messages |
 | `slk send <channel> <message>` | `s` | Send a message |
-| `slk search <query> [count]` |  | Search workspace messages |
+| `slk search <query> [count]` |  | Search messages (add `-A` to search every workspace) |
+| `slk owed [--days N]` |  | Mentions you haven't answered yet (an emoji reaction counts as answered) |
 | `slk thread <channel> <ts> [count]` | `t` | Read thread replies |
 | `slk react <channel> <ts> <emoji>` |  | Add a reaction |
+| `slk mark <channel>` |  | Mark a channel as read (opt-in; `-w` supported, not `-A`) |
 
 ## Useful flags
 
 | Flag | Description |
 |---|---|
+| `-w, --workspace <name|id>` | Run the command against a specific workspace (instead of the active one) |
+| `-A, --all-workspaces` | Run the command across every logged-in workspace (`inbox`, `search`) |
+| `--json` | Machine-readable JSON output (`inbox`, `owed`, `search`, `mark`) |
 | `--ts` | Show raw Slack timestamps for thread follow-up |
 | `--threads` | Auto-expand threads while reading |
 | `--from YYYY-MM-DD` | Read messages from a date onward |
 | `--to YYYY-MM-DD` | Read messages until a date |
-| `--all` | Include completed items in `slk inbox saved` |
+| `--all` | Include completed items in `slk inbox saved` (distinct from `-A`/`--all-workspaces`) |
 | `--no-emoji` | Disable emoji output |
 
 ## Channel, DM, and workspace resolution
@@ -238,6 +243,41 @@ slk workspace use T12345678
 ```
 
 The selected workspace is then used for subsequent `slack-personal-cli` commands.
+
+### Workspace scope flags
+
+Every command defaults to the **active** workspace. Two flags change that scope:
+
+```bash
+slk inbox unread                 # active workspace (default)
+slk inbox unread -w candid       # a specific workspace, without switching the active one
+slk inbox unread -A              # aggregate across ALL logged-in workspaces
+```
+
+### Cross-workspace commands
+
+Because `slk` reads every locally signed-in workspace from one session, it can do
+things a single-token integration structurally cannot — sweep all of them at once.
+
+```bash
+# Unread/mention/DM digest across every workspace, grouped per workspace
+slk inbox unread -A
+
+# Mentions you still owe a reply to (a reply or emoji reaction clears them)
+slk owed                         # active workspace, last 30 days
+slk owed -A --days 14            # every workspace, last 14 days
+
+# Search merged newest-first across every workspace, tagged by workspace
+slk search "deploy failed" -A
+
+# Pipe any of these to a tool or agent
+slk inbox unread -A --json | jq '.workspaces[].items[]'
+```
+
+`-A` fans out with bounded concurrency and isolates failures: if one workspace
+errors, the rest still return and the failures are summarized at the end. Sweeps
+are paced by the shared rate limiter, so a full `-A` across many workspaces can
+take a while.
 
 ## How auth works
 

@@ -6,6 +6,7 @@
 
 import * as defaultCmd from "../src/commands.js";
 import * as defaultDrafts from "../src/drafts.js";
+import { setJsonMode } from "../src/output.js";
 import { pathToFileURL } from "node:url";
 import { realpathSync, readFileSync } from "node:fs";
 
@@ -40,11 +41,19 @@ Core commands:
   slk users             (u)              List workspace users with statuses
   slk read <ch> [n]     (r)              Read last n messages (default: 20)
   slk send <ch> <msg>   (s)              Send a message
-  slk search <query> [n]                 Search messages across workspace
+  slk search <query> [n]                 Search messages (add -A to search all workspaces)
+  slk owed [--days N]                     Mentions you haven't answered (emoji counts as answered)
   slk thread <ch> <ts> [n] (t)           Read thread replies (default: 50)
   slk react <ch> <ts> <emoji>            Add emoji reaction
+  slk mark <ch>                          Mark a channel as read (opt-in; -w supported, not -A)
+
+Workspace scope (default: active workspace):
+  -w, --workspace <name|id>              Target a specific workspace for this command
+  -A, --all-workspaces                   Run across ALL logged-in workspaces
+                                         (supported: inbox activity, inbox unread)
 
 Settings:
+  --json                                 Machine-readable JSON output (inbox, owed, search, mark)
   --ts                                   Show raw Slack timestamps (for thread commands)
   --threads                              Auto-expand threads when reading
   --from YYYY-MM-DD                      Read messages from this date
@@ -123,8 +132,42 @@ function usageError(consoleObj, exit, message) {
   return exit(1);
 }
 
+// Extract cross-workspace scope flags before positional parsing.
+// Uses `-A`/`--all-workspaces` (not `--all`, which `inbox saved` already uses
+// to mean "include completed").
+function parseScopeFlags(args) {
+  const rest = [];
+  let workspace = null;
+  let all = false;
+  let json = false;
+
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i];
+    if (a === "-A" || a === "--all-workspaces") {
+      all = true;
+      continue;
+    }
+    if (a === "--json") {
+      json = true;
+      continue;
+    }
+    if (a === "-w" || a === "--workspace") {
+      workspace = args[i + 1] || null;
+      i += 1;
+      continue;
+    }
+    rest.push(a);
+  }
+
+  return { workspace, all, json, rest };
+}
+
 export async function runCli(rawArgs = process.argv.slice(2), deps = {}) {
-  const args = [...rawArgs];
+  const { workspace, all, json, rest } = parseScopeFlags([...rawArgs]);
+  const args = rest;
+  const scope = { workspace, all };
+  const hasScope = Boolean(workspace) || all;
+  (deps.setJsonMode ?? setJsonMode)(json);
   const command = args[0];
   const cmd = deps.cmd ?? defaultCmd;
   const drafts = deps.drafts ?? defaultDrafts;
@@ -172,9 +215,22 @@ export async function runCli(rawArgs = process.argv.slice(2), deps = {}) {
       if (!args[1] || !args[2] || !args[3]) return usageError(consoleObj, exit, "Usage: slk reply <channel> <ts> <message>");
       return cmd.reply(args[1], args[2], args.slice(3).join(" "));
 
-    case "search":
-      if (!args[1]) return usageError(consoleObj, exit, "Usage: slk search <query> [count]");
-      return cmd.search(args.slice(1).join(" "), parseInt(args[args.length - 1], 10) || 20);
+    case "search": {
+      if (!args[1]) return usageError(consoleObj, exit, "Usage: slk search <query> [count] [-w <ws> | -A]");
+      const scopeArgs = hasScope ? [scope] : [];
+      return cmd.search(args.slice(1).join(" "), parseInt(args[args.length - 1], 10) || 20, ...scopeArgs);
+    }
+
+    case "owed": {
+      const dIdx = args.indexOf("--days");
+      const days = dIdx > -1 ? parseInt(args[dIdx + 1], 10) || 30 : 30;
+      return cmd.owed({ workspace, all, days });
+    }
+
+    case "mark": {
+      if (!args[1]) return usageError(consoleObj, exit, "Usage: slk mark <channel> [-w <ws>]");
+      return cmd.mark(args[1], { workspace, all });
+    }
 
     case "thread":
     case "t":
@@ -199,8 +255,9 @@ export async function runCli(rawArgs = process.argv.slice(2), deps = {}) {
 
     case "inbox": {
       const sub = args[1];
-      if (!sub || sub === "activity") return cmd.activity(false);
-      if (sub === "unread") return cmd.activity(true);
+      const scopeArgs = hasScope ? [scope] : [];
+      if (!sub || sub === "activity") return cmd.activity(false, ...scopeArgs);
+      if (sub === "unread") return cmd.activity(true, ...scopeArgs);
       if (sub === "saved") return cmd.saved(parseInt(args[2], 10) || 20, args.includes("--all"));
       if (sub === "starred") return cmd.starred();
       return usageError(consoleObj, exit, "Usage: slk inbox <activity|unread|saved|starred>");

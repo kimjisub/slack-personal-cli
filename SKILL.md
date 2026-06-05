@@ -75,10 +75,12 @@ slk read @username [count]            # Read DMs by username
 slk read <channel> --threads          # Auto-expand all threads
 slk read <channel> --from 2026-02-01  # Date range filter
 slk thread <channel> <ts> [count]     # Read thread replies, default 50 (alias: t)
-slk search <query> [count]            # Search messages across workspace
+slk search <query> [count]            # Search messages (add -A to search all workspaces)
+slk owed [--days N]                   # Mentions you haven't answered (emoji reaction counts as answered)
 slk send <channel> <message>          # Send a message (alias: s)
 slk send <channel> <message> --thread <ts>  # Send into an existing thread
 slk react <channel> <ts> <emoji>      # React to a message
+slk mark <channel>                    # Mark a channel as read (opt-in; -w supported, not -A)
 slk reply <channel> <ts> <message>    # Reply to a thread root or thread message
 slk message link <channel> <ts>       # Print the Slack permalink for one message
 slk message show <channel> <ts>       # Show one exact message
@@ -102,6 +104,13 @@ slk draft channel <channel> <message> # Draft a channel message
 slk draft thread <ch> <ts> <message>  # Draft a thread reply
 slk draft dm <user_id|@username> <message>  # Draft a DM
 slk draft drop <draft_id>             # Delete a draft
+
+# Workspace scope (default = active workspace)
+slk inbox unread -w candid            # -w <name|id>: a specific workspace, no active switch
+slk inbox unread -A                   # -A: aggregate across ALL logged-in workspaces
+slk search "deploy" -A                # cross-workspace search, merged newest-first
+slk owed -A --days 14                 # mentions owed across every workspace
+slk inbox unread -A --json | jq .     # --json: machine-readable output (inbox/owed/search/mark)
 
 ```
 

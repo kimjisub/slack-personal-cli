@@ -32,6 +32,7 @@ function buildRequest(method, params, token, cookie) {
     "drafts.delete",
     "drafts.update",
     "conversations.open",
+    "conversations.mark",
     "client.counts",
     "users.prefs.get",
     "saved.list",
@@ -83,14 +84,15 @@ function getRetryAfterMs(res) {
  * Auto-refreshes credentials on invalid_auth (once).
  * Coordinates requests across processes to avoid overwhelming Slack.
  */
-export async function slackApi(method, params = {}) {
+export async function slackApi(method, params = {}, creds = null) {
   return withRateLimitSlot(async () => {
     const { getCredentials, refresh } = getAuthFns();
     let authRetried = false;
     let rateLimitRetries = 0;
 
     while (true) {
-      const { token, cookie } = getCredentials();
+      // Explicit creds (cross-workspace fan-out) take precedence over the active workspace.
+      const { token, cookie } = creds || getCredentials();
       const { url, options } = buildRequest(method, params, token, cookie);
       const res = await fetch(url, options);
 
@@ -110,7 +112,8 @@ export async function slackApi(method, params = {}) {
 
       const data = await res.json();
 
-      if (!data.ok && data.error === "invalid_auth" && !authRetried) {
+      // Auto-refresh only applies to the active workspace; injected creds report the error as-is.
+      if (!data.ok && data.error === "invalid_auth" && !creds && !authRetried) {
         authRetried = true;
         refresh();
         continue;
@@ -124,12 +127,12 @@ export async function slackApi(method, params = {}) {
 /**
  * Paginate through a Slack API method using cursor-based pagination.
  */
-export async function slackPaginate(method, params = {}, key = "channels") {
+export async function slackPaginate(method, params = {}, key = "channels", creds = null) {
   const results = [];
   let cursor;
 
   do {
-    const data = await slackApi(method, { ...params, cursor, limit: params.limit || 200 });
+    const data = await slackApi(method, { ...params, cursor, limit: params.limit || 200 }, creds);
     if (!data.ok) return data; // return error as-is
 
     if (data[key]) results.push(...data[key]);
