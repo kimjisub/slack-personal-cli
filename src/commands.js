@@ -3,9 +3,20 @@
  */
 
 import { slackApi, slackPaginate } from "./api.js";
-import { getCredentials, listWorkspaces, getActiveWorkspace, setActiveWorkspace } from "./auth.js";
+import { listWorkspaces, getActiveWorkspace, setActiveWorkspace } from "./auth.js";
 import { resolveScope, resolveTargets, mapWorkspaces, workspaceLabel } from "./workspaces.js";
-import { emit } from "./output.js";
+import { runScopedSections } from "./scoped.js";
+import { emit, die } from "./output.js";
+import {
+  formatTs,
+  userName,
+  printMessage,
+  normalizeMatch,
+  renderSearchMatch,
+  renderOwed,
+  renderUnreadSection,
+  unreadsToJson,
+} from "./render.js";
 
 // ── Helpers ──────────────────────────────────────────────
 
@@ -20,10 +31,6 @@ async function getUsers() {
     userCache[u.id] = u.real_name || u.profile?.display_name || u.name;
   }
   return userCache;
-}
-
-function userName(users, id) {
-  return users[id] || id;
 }
 
 async function resolveChannel(nameOrId, creds = null) {
@@ -67,24 +74,6 @@ async function resolveChannel(nameOrId, creds = null) {
   );
   if (!ch) throw new Error(`Channel not found: ${nameOrId}`);
   return ch.id;
-}
-
-function formatTs(ts) {
-  return new Date(parseFloat(ts) * 1000).toLocaleString();
-}
-
-function printMessage(users, msg, { showTs = true, prefix = "", indent = "  " } = {}) {
-  const who = userName(users, msg.user);
-  const time = formatTs(msg.ts);
-  const tsStr = showTs ? ` ts:${msg.ts}` : "";
-  const thread = msg.reply_count ? ` [${msg.reply_count} replies]` : "";
-  console.log(`${prefix}[${time}${tsStr}] ${who}${thread}:`);
-  console.log(`${indent}${msg.text || ""}`);
-  if (msg.files?.length) {
-    for (const f of msg.files) {
-      console.log(`${indent}📎 ${f.name} (${f.mimetype})`);
-    }
-  }
 }
 
 async function fetchMessage(channel, ts) {
@@ -159,10 +148,7 @@ export async function channels() {
     types: "public_channel,private_channel",
     exclude_archived: true,
   });
-  if (!data.ok) {
-    console.error(`Error: ${data.error}`);
-    process.exit(1);
-  }
+  if (!data.ok) die(data.error);
   for (const ch of data.channels) {
     const prefix = ch.is_private ? "🔒" : "#";
     const members = ch.num_members || 0;
@@ -176,10 +162,7 @@ export async function dms() {
     types: "im",
     exclude_archived: true,
   });
-  if (!data.ok) {
-    console.error(`Error: ${data.error}`);
-    process.exit(1);
-  }
+  if (!data.ok) die(data.error);
   for (const ch of data.channels) {
     const name = userName(users, ch.user);
     console.log(`💬 ${name}  (${ch.id})`);
@@ -196,26 +179,12 @@ export async function read(channelRef, count = 20, options = {}) {
   if (latest) params.latest = latest;
   
   const data = await slackApi("conversations.history", params);
-  if (!data.ok) {
-    console.error(`Error: ${data.error}`);
-    process.exit(1);
-  }
+  if (!data.ok) die(data.error);
 
-  const messages = data.messages.reverse();
-  for (const msg of messages) {
-    const who = userName(users, msg.user);
-    const time = formatTs(msg.ts);
-    const tsStr = showTs ? ` ts:${msg.ts}` : "";
-    const thread = msg.reply_count ? ` [${msg.reply_count} replies]` : "";
-    console.log(`[${time}${tsStr}] ${who}${thread}:`);
-    console.log(`  ${msg.text}`);
-    if (msg.files?.length) {
-      for (const f of msg.files) {
-        console.log(`  📎 ${f.name} (${f.mimetype})`);
-      }
-    }
-    
-    // Auto-expand threads
+  for (const msg of data.messages.reverse()) {
+    printMessage(users, msg, { showTs });
+
+    // Auto-expand threads (skip the parent message, already printed above).
     if (expandThreads && msg.reply_count > 0) {
       const replies = await slackApi("conversations.replies", {
         channel,
@@ -223,17 +192,8 @@ export async function read(channelRef, count = 20, options = {}) {
         limit: 100,
       });
       if (replies.ok && replies.messages?.length > 1) {
-        for (const reply of replies.messages.slice(1)) { // skip parent
-          const replyWho = userName(users, reply.user);
-          const replyTime = formatTs(reply.ts);
-          const replyTsStr = showTs ? ` ts:${reply.ts}` : "";
-          console.log(`    ↳ [${replyTime}${replyTsStr}] ${replyWho}:`);
-          console.log(`      ${reply.text}`);
-          if (reply.files?.length) {
-            for (const f of reply.files) {
-              console.log(`      📎 ${f.name} (${f.mimetype})`);
-            }
-          }
+        for (const reply of replies.messages.slice(1)) {
+          printMessage(users, reply, { showTs, prefix: "    ↳ ", indent: "      " });
         }
       }
     }
@@ -250,8 +210,7 @@ export async function send(channelRef, text, options = {}) {
     const threadSuffix = options.threadTs ? ` in thread ${options.threadTs}` : "";
     console.log(`✅ Sent to ${channelRef}${threadSuffix} (ts: ${data.ts})`);
   } else {
-    console.error(`❌ Failed: ${data.error}`);
-    process.exit(1);
+    die(data.error);
   }
 }
 
@@ -265,31 +224,6 @@ async function computeSearch(query, count, creds = null) {
   return { total: data.messages?.total || 0, matches: data.messages?.matches || [] };
 }
 
-function searchAuthor(msg, users) {
-  return users[msg.user] || msg.username || msg.user || "?";
-}
-
-function normalizeMatch(msg, users, label) {
-  return {
-    workspace: label,
-    ts: msg.ts,
-    channel: msg.channel?.name || msg.channel?.id || null,
-    author: searchAuthor(msg, users),
-    text: msg.text,
-    permalink: msg.permalink,
-  };
-}
-
-function renderSearchMatch(msg, users, label = null) {
-  const who = searchAuthor(msg, users);
-  const time = formatTs(msg.ts);
-  const ch = msg.channel?.name || msg.channel?.id || "?";
-  const wsTag = label ? `[${label}] ` : "";
-  console.log(`[${time}] ${wsTag}#${ch} — ${who}:`);
-  console.log(`  ${msg.text}`);
-  console.log();
-}
-
 export async function search(query, count = 20, opts = {}) {
   const scope = resolveScope(opts);
   const targets = resolveTargets(scope);
@@ -299,8 +233,7 @@ export async function search(query, count = 20, opts = {}) {
     try {
       res = await computeSearch(query, count, targets[0].creds);
     } catch (err) {
-      console.error(`Error: ${err.message}`);
-      process.exit(1);
+      die(err.message);
     }
     // Real names only available cheaply for the active workspace.
     const users = scope.mode === "active" ? await getUsers() : {};
@@ -412,70 +345,14 @@ async function computeOwed(creds, days) {
   return rows;
 }
 
-function renderOwed(rows, label = null) {
-  if (label) console.log(`\n=== ${label} ===`);
-  if (rows.length === 0) {
-    console.log("Nothing owed! 🎉");
-    return;
-  }
-  for (const r of rows) {
-    console.log(`[${formatTs(r.ts)}] #${r.channelName} — ${r.author}:`);
-    console.log(`  ${r.text}`);
-    if (r.permalink) console.log(`  ${r.permalink}`);
-    console.log();
-  }
-}
-
 export async function owed(opts = {}) {
   const days = opts.days || 30;
-  const scope = resolveScope(opts);
-  const targets = resolveTargets(scope);
-
-  let sections; // [{ label, rows, error? }]
-  if (targets.length === 1) {
-    let rows;
-    try {
-      rows = await computeOwed(targets[0].creds, days);
-    } catch (err) {
-      console.error(`Error: ${err.message}`);
-      process.exit(1);
-    }
-    sections = [
-      { label: scope.mode === "one" ? workspaceLabel(targets[0].team) : null, rows },
-    ];
-  } else {
-    const results = await mapWorkspaces(targets, (creds) => computeOwed(creds, days));
-    sections = results.map((r) => ({
-      label: workspaceLabel(r.team),
-      rows: r.value,
-      error: r.error,
-    }));
-  }
-
-  emit(
-    {
-      scope: scope.mode,
-      days,
-      workspaces: sections
-        .filter((s) => !s.error)
-        .map((s) => ({ workspace: s.label, owed: s.rows })),
-      failed: sections.filter((s) => s.error).map((s) => s.label),
-    },
-    () => {
-      for (const s of sections) {
-        if (s.error) continue;
-        renderOwed(s.rows, s.label);
-      }
-      const failed = sections.filter((s) => s.error);
-      if (failed.length) {
-        console.log(
-          `\n⚠️  ${failed.length} workspace(s) failed: ${failed
-            .map((s) => s.label)
-            .join(", ")}`
-        );
-      }
-    }
-  );
+  await runScopedSections(opts, {
+    compute: (creds) => computeOwed(creds, days),
+    toJson: (rows, label) => ({ workspace: label, owed: rows }),
+    render: (rows, label) => renderOwed(rows, label),
+    extra: { days },
+  });
 }
 
 export async function thread(channelRef, ts, count = 50) {
@@ -486,10 +363,7 @@ export async function thread(channelRef, ts, count = 50) {
     ts,
     limit: count,
   });
-  if (!data.ok) {
-    console.error(`Error: ${data.error}`);
-    process.exit(1);
-  }
+  if (!data.ok) die(data.error);
 
   for (const msg of data.messages) {
     printMessage(users, msg, { showTs: true });
@@ -500,10 +374,7 @@ export async function thread(channelRef, ts, count = 50) {
 export async function permalink(channelRef, ts) {
   const channel = await resolveChannel(channelRef);
   const data = await slackApi("chat.getPermalink", { channel, message_ts: ts });
-  if (!data.ok) {
-    console.error(`Error: ${data.error}`);
-    process.exit(1);
-  }
+  if (!data.ok) die(data.error);
 
   console.log(data.permalink);
 }
@@ -516,8 +387,7 @@ export async function showMessage(channelRef, ts) {
     const msg = await fetchMessage(channel, ts);
     printMessage(users, msg, { showTs: true });
   } catch (err) {
-    console.error(`Error: ${err.message}`);
-    process.exit(1);
+    die(err.message);
   }
 }
 
@@ -537,17 +407,13 @@ export async function messageContext(channelRef, ts, before = 2, after = 2) {
       console.log();
     }
   } catch (err) {
-    console.error(`Error: ${err.message}`);
-    process.exit(1);
+    die(err.message);
   }
 }
 
 export async function users() {
   const data = await slackPaginate("users.list", {}, "members");
-  if (!data.ok) {
-    console.error(`Error: ${data.error}`);
-    process.exit(1);
-  }
+  if (!data.ok) die(data.error);
 
   for (const u of data.members) {
     if (u.deleted || u.is_bot) continue;
@@ -637,109 +503,12 @@ async function computeUnreads(creds = null) {
   return { threads: counts.threads, items, chMap, mutedSet };
 }
 
-function renderUnreadSection(data, unreadOnly, label = null) {
-  if (label) console.log(`\n=== ${label} ===`);
-
-  if (data.threads?.has_unreads || data.threads?.mention_count > 0) {
-    console.log(
-      `🧵 Threads — ${data.threads.mention_count} mentions, unreads: ${data.threads.has_unreads}`
-    );
-    console.log();
-  }
-
-  let filtered = data.items;
-  if (unreadOnly) {
-    filtered = filtered.filter(
-      (c) => (c.has_unreads || c.mention_count > 0) && !data.mutedSet.has(c.id)
-    );
-  }
-
-  if (filtered.length === 0) {
-    console.log(unreadOnly ? "No unreads! 🎉" : "No activity.");
-    return 0;
-  }
-
-  for (const ch of filtered) {
-    const name = data.chMap[ch.id] || ch.id;
-    const isMuted = data.mutedSet.has(ch.id);
-    const prefix = ch.type === "dm" ? "💬" : ch.type === "group" ? "👥" : "#";
-    const mentions = ch.mention_count > 0 ? ` (${ch.mention_count} mentions)` : "";
-    const unread = ch.has_unreads ? " •" : "";
-    const muted = isMuted ? " 🔇" : "";
-    console.log(`${prefix} ${name}${unread}${mentions}${muted}`);
-  }
-  return filtered.length;
-}
-
-function unreadsToJson(data, unreadOnly, label) {
-  let items = data.items;
-  if (unreadOnly) {
-    items = items.filter(
-      (c) => (c.has_unreads || c.mention_count > 0) && !data.mutedSet.has(c.id)
-    );
-  }
-  return {
-    workspace: label,
-    threads: data.threads || null,
-    items: items.map((c) => ({
-      id: c.id,
-      name: data.chMap[c.id] || c.id,
-      type: c.type,
-      has_unreads: Boolean(c.has_unreads),
-      mention_count: c.mention_count || 0,
-      muted: data.mutedSet.has(c.id),
-    })),
-  };
-}
-
 export async function activity(unreadOnly = false, opts = {}) {
-  const scope = resolveScope(opts);
-  const targets = resolveTargets(scope);
-
-  let sections; // [{ label, data, error? }]
-  if (targets.length === 1) {
-    let data;
-    try {
-      data = await computeUnreads(targets[0].creds);
-    } catch (err) {
-      console.error(`Error: ${err.message}`);
-      process.exit(1);
-    }
-    sections = [
-      { label: scope.mode === "one" ? workspaceLabel(targets[0].team) : null, data },
-    ];
-  } else {
-    const results = await mapWorkspaces(targets, (creds) => computeUnreads(creds));
-    sections = results.map((r) => ({
-      label: workspaceLabel(r.team),
-      data: r.value,
-      error: r.error,
-    }));
-  }
-
-  emit(
-    {
-      scope: scope.mode,
-      workspaces: sections
-        .filter((s) => !s.error)
-        .map((s) => unreadsToJson(s.data, unreadOnly, s.label)),
-      failed: sections.filter((s) => s.error).map((s) => s.label),
-    },
-    () => {
-      for (const s of sections) {
-        if (s.error) continue;
-        renderUnreadSection(s.data, unreadOnly, s.label);
-      }
-      const failed = sections.filter((s) => s.error);
-      if (failed.length) {
-        console.log(
-          `\n⚠️  ${failed.length} workspace(s) failed: ${failed
-            .map((s) => s.label)
-            .join(", ")}`
-        );
-      }
-    }
-  );
+  await runScopedSections(opts, {
+    compute: (creds) => computeUnreads(creds),
+    toJson: (data, label) => unreadsToJson(data, unreadOnly, label),
+    render: (data, label) => renderUnreadSection(data, unreadOnly, label),
+  });
 }
 
 export async function starred() {
@@ -772,8 +541,7 @@ export async function starred() {
   // Get starred items
   const stars = await slackApi("stars.list", { count: 50 });
   if (!stars.ok) {
-    console.error(`Error: ${stars.error}`);
-    process.exit(1);
+    die(stars.error);
   }
 
   if (stars.items?.length > 0) {
@@ -802,10 +570,7 @@ export async function pins(channelRef) {
   const users = await getUsers();
 
   const data = await slackApi("pins.list", { channel });
-  if (!data.ok) {
-    console.error(`Error: ${data.error}`);
-    process.exit(1);
-  }
+  if (!data.ok) die(data.error);
 
   if (!data.items?.length) {
     console.log("No pinned items.");
@@ -839,10 +604,7 @@ export async function saved(count = 20, includeCompleted = false) {
   }
 
   const data = await slackApi("saved.list", { count });
-  if (!data.ok) {
-    console.error(`Error: ${data.error}`);
-    process.exit(1);
-  }
+  if (!data.ok) die(data.error);
 
   const items = data.saved_items || [];
   const counts = data.counts || {};
@@ -915,8 +677,7 @@ export async function currentWorkspace() {
 
   const [defaultTeamId, defaultInfo] = Object.entries(teams)[0] || [];
   if (!defaultTeamId) {
-    console.error("No workspaces found.");
-    process.exit(1);
+    die("No workspaces found.");
   }
 
   console.log(`Current workspace: ${defaultInfo.name} (${defaultInfo.domain})`);
@@ -969,8 +730,7 @@ export async function react(channelRef, ts, emoji) {
   if (data.ok) {
     console.log(`✅ Reacted with :${emoji.replace(/:/g, "")}:`);
   } else {
-    console.error(`❌ Failed: ${data.error}`);
-    process.exit(1);
+    die(data.error);
   }
 }
 
@@ -980,8 +740,7 @@ export async function react(channelRef, ts, emoji) {
 function singleTargetCreds(opts, opName) {
   const scope = resolveScope(opts);
   if (scope.mode === "all") {
-    console.error(`${opName} does not support -A (per-workspace only).`);
-    process.exit(1);
+    die(`${opName} does not support -A (per-workspace only).`);
   }
   return resolveTargets(scope)[0].creds;
 }
@@ -994,14 +753,12 @@ export async function mark(channelRef, opts = {}) {
   const hist = await slackApi("conversations.history", { channel, limit: 1 }, creds);
   const ts = hist.ok ? hist.messages?.[0]?.ts : null;
   if (!ts) {
-    console.error("Nothing to mark (no messages or fetch failed).");
-    process.exit(1);
+    die("Nothing to mark (no messages or fetch failed).");
   }
 
   const res = await slackApi("conversations.mark", { channel, ts }, creds);
   if (!res.ok) {
-    console.error(`Error: ${res.error}`);
-    process.exit(1);
+    die(res.error);
   }
   emit({ ok: true, channel, ts }, () => {
     console.log(`✓ Marked ${channelRef} as read (up to ts ${ts})`);

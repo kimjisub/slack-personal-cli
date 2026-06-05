@@ -1,7 +1,13 @@
 /**
- * Output mode switch. Commands build plain data and call `emit(data, renderHuman)`;
- * with `--json` active the data is serialized, otherwise the human renderer runs.
+ * Output helpers. `emit` switches between human and `--json` rendering; `die`
+ * is the single error-exit path so commands report failures consistently.
  */
+
+/** Print a "Error: …" line to stderr and exit non-zero. */
+export function die(message) {
+  console.error(`Error: ${message}`);
+  process.exit(1);
+}
 
 let jsonMode = false;
 

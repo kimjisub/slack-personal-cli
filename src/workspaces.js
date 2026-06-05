@@ -7,7 +7,7 @@
  *   - { all: true }  → every logged-in workspace
  */
 
-import { listWorkspaces, getAllWorkspaceCredentials } from "./auth.js";
+import { getAllWorkspaceCredentials } from "./auth.js";
 
 export function resolveScope(opts = {}) {
   if (opts.all) return { mode: "all" };
@@ -88,6 +88,3 @@ export async function mapWorkspaces(targets, fn, { concurrency = 4 } = {}) {
   await Promise.all(Array.from({ length: workers }, worker));
   return results;
 }
-
-// Re-exported for callers that only need the active-or-one vs all decision.
-export { listWorkspaces };
