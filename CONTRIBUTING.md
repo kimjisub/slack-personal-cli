@@ -16,7 +16,8 @@ slk auth          # verify it can read your local Slack session
 
 ## Running tests
 
-No install step — there are no dependencies.
+The package has **zero runtime dependencies**; tests need only Node. Dev
+tooling (ESLint, TypeScript) is installed via `npm ci` for linting/typechecking.
 
 ```bash
 node --test                 # unit + routing tests (fast, no network)
@@ -57,6 +58,7 @@ The code is layered so each module has one job:
 | `bin/slk.js` | Argument parsing, global flags (`-w`/`-A`/`--json`), command dispatch |
 | `src/api.js` | Authenticated Slack HTTP calls, rate-limit/retry, pagination, `die()`-free transport |
 | `src/auth.js` | Reads session credentials from the Slack desktop app (lazy — no import-time I/O) |
+| `src/leveldb.js` | Pure varint + Snappy decoders for parsing Chromium LevelDB blocks (unit-tested) |
 | `src/workspaces.js` | Scope resolution (`resolveScope`/`resolveTargets`) and bounded-concurrency fan-out (`mapWorkspaces`) |
 | `src/scoped.js` | `runScopedSections()` — the shared "active vs `-w` vs `-A` → emit → summarize failures" flow |
 | `src/commands.js` | Command implementations and their `compute*` data fetchers |
@@ -74,9 +76,12 @@ The code is layered so each module has one job:
   (`computeX`), `render.js` turns it into text, and `emit()` decides human vs
   JSON. Don't `console.log` business data straight from a fetcher.
 - **Errors exit through `die()`** (or by throwing, which `bin/slk.js` catches).
-  Don't sprinkle `console.error(...); process.exit(1)`.
-- **No dependencies.** If you reach for a package, reconsider — the appeal of
-  this tool is that it's a single small install with no supply chain.
+  Don't sprinkle `console.error(...); process.exit(1)`. The one deliberate
+  exception is `switchWorkspace`, which prints the list of available workspaces
+  before exiting — a multi-line diagnostic `die()` isn't meant to carry.
+- **No runtime dependencies.** If you reach for a *runtime* package, reconsider —
+  the appeal of this tool is that it's a single small install with no supply
+  chain. Dev-only tooling (ESLint, TypeScript) is fine.
 
 ## Pull requests
 

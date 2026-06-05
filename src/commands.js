@@ -143,8 +143,7 @@ export async function auth() {
     console.log(`   User ID: ${data.user_id}`);
     console.log(`   URL: ${data.url}`);
   } else {
-    console.error(`❌ Auth failed: ${data.error}`);
-    process.exit(1);
+    die(`auth failed: ${data.error}`);
   }
 }
 
