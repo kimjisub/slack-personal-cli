@@ -145,7 +145,7 @@ For project-scoped Claude Code skills, use `<repo>/.claude/skills/slack-personal
 You are on a pre-0.3.1 version. The previous main-module guard compared `process.argv[1]` to `import.meta.url` directly, which never matched for symlinked global bins, so `main()` was never invoked. Fix:
 
 ```bash
-slk --version            # check which version is on PATH (0.4.0+ is current)
+slk --version            # check which version is on PATH (v0.3.1+ has the fix)
 npm install -g github:kimjisub/slack-personal-cli
 slk auth
 ```
