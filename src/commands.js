@@ -228,7 +228,7 @@ export async function reply(channelRef, threadTs, text) {
  * @param {number} count
  * @param {import("./api.js").Credentials|null} [creds]
  */
-async function computeSearch(query, count, creds = null) {
+export async function computeSearch(query, count, creds = null) {
   const data = await slackApi("search.messages", { query, count }, creds);
   if (!data.ok) throw new Error(data.error || "search failed");
   return { total: data.messages?.total || 0, matches: data.messages?.matches || [] };
@@ -319,7 +319,7 @@ function isoDaysAgo(days) {
   return new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
 }
 
-async function computeOwed(creds, days) {
+export async function computeOwed(creds, days) {
   const me = await slackApi("auth.test", {}, creds);
   if (!me.ok) throw new Error(me.error || "auth.test failed");
   const myId = me.user_id;
@@ -461,7 +461,7 @@ async function getMutedChannels(creds = null) {
  * @param {import("./api.js").Credentials|null} [creds]
  * @returns {Promise<{ threads: any, items: any[], chMap: Record<string,string>, mutedSet: Set<string> }>}
  */
-async function computeUnreads(creds = null) {
+export async function computeUnreads(creds = null) {
   const [counts, mutedSet, chData] = await Promise.all([
     slackApi("client.counts", {}, creds),
     getMutedChannels(creds),

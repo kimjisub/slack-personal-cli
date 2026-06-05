@@ -25,7 +25,21 @@ node --check src/*.js bin/*.js   # syntax check
 
 Tests run on Linux CI without a Slack install: importing any module is
 side-effect free, and credential access is only triggered when a command
-actually runs. Live tests against real Slack are opt-in:
+actually runs.
+
+To unit-test command logic without real Slack traffic, install a fake transport
+on `globalThis.__SLK_TEST_HOOKS__.handle` — `slackApi` short-circuits to it,
+bypassing the network, rate limiter, and auth. `tests/compute.test.js` uses this
+to drive the `compute*` data fetchers with canned responses. Lint and types are
+also gated:
+
+```bash
+npm run lint        # eslint
+npm run typecheck   # tsc --noEmit (checkJs)
+npm run check       # lint + typecheck + test
+```
+
+Live tests against real Slack are opt-in:
 
 ```bash
 SLK_LIVE_TESTS=1 SLK_LIVE_READ_CHANNEL=general npm run test:live

@@ -95,6 +95,12 @@ function getRetryAfterMs(res) {
  * @returns {Promise<any>}                 The parsed Slack API response.
  */
 export async function slackApi(method, params = {}, creds = null) {
+  // Test seam: when a handler is installed, short-circuit the network, rate
+  // limiter, and auth entirely and return its response. Used to unit-test the
+  // command-layer compute* functions without real Slack traffic.
+  const handle = globalThis.__SLK_TEST_HOOKS__?.handle;
+  if (handle) return handle(method, params, creds);
+
   return withRateLimitSlot(async () => {
     const { getCredentials, refresh } = getAuthFns();
     let authRetried = false;
