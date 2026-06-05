@@ -14,6 +14,8 @@ import { pbkdf2Sync } from "crypto";
 
 import { existsSync, mkdirSync } from "fs";
 
+import { decodeVarint, snappyDecompress } from "./leveldb.js";
+
 const SLACK_DIR_DIRECT = join(homedir(), "Library", "Application Support", "Slack");
 const SLACK_DIR_APPSTORE = join(
   homedir(),
@@ -310,54 +312,6 @@ export function getCredentials(forceRefresh = false) {
 export function refresh() {
   cachedCreds = null;
   return getCredentials(true);
-}
-
-// ── Snappy decompression (for LevelDB SSTable blocks) ──
-
-function decodeVarint(buf, offset) {
-  let result = 0, shift = 0;
-  while (offset < buf.length) {
-    const b = buf[offset++];
-    result |= (b & 0x7f) << shift;
-    if (!(b & 0x80)) return [result, offset];
-    shift += 7;
-  }
-  return [result, offset];
-}
-
-function snappyDecompress(compressed) {
-  const [uncompressedLen, dataStart] = decodeVarint(compressed, 0);
-  if (uncompressedLen > 10_000_000 || uncompressedLen < 0) throw new Error("bad length");
-  let pos = dataStart;
-  const out = Buffer.alloc(uncompressedLen);
-  let outPos = 0;
-  while (pos < compressed.length && outPos < uncompressedLen) {
-    const tag = compressed[pos++];
-    const type = tag & 3;
-    if (type === 0) {
-      let len = (tag >> 2) + 1;
-      if (len === 61) { len = compressed[pos++] + 1; }
-      else if (len === 62) { len = compressed[pos] | (compressed[pos + 1] << 8); pos += 2; len += 1; }
-      else if (len === 63) { len = compressed[pos] | (compressed[pos + 1] << 8) | (compressed[pos + 2] << 16); pos += 3; len += 1; }
-      else if (len === 64) { len = compressed[pos] | (compressed[pos + 1] << 8) | (compressed[pos + 2] << 16) | (compressed[pos + 3] << 24); pos += 4; len += 1; }
-      if (pos + len > compressed.length) throw new Error("overflow");
-      compressed.copy(out, outPos, pos, pos + len);
-      pos += len; outPos += len;
-    } else if (type === 1) {
-      const len = ((tag >> 2) & 7) + 4;
-      const off = ((tag >> 5) << 8) | compressed[pos++];
-      for (let i = 0; i < len; i++) out[outPos + i] = out[outPos - off + i];
-      outPos += len;
-    } else if (type === 2) {
-      const len = (tag >> 2) + 1;
-      const off = compressed[pos] | (compressed[pos + 1] << 8); pos += 2;
-      for (let i = 0; i < len; i++) out[outPos + i] = out[outPos - off + i];
-      outPos += len;
-    } else {
-      throw new Error("snappy type 3");
-    }
-  }
-  return out.subarray(0, outPos);
 }
 
 // ── localConfig_v2 extraction from LevelDB ──

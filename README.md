@@ -383,6 +383,9 @@ On first run, macOS may ask whether to allow access to `Slack Safe Storage`.
 
 If this machine is shared or tightly managed, prefer the more conservative option.
 
+For the full credential model, trust boundaries, and how to report a
+vulnerability, see [SECURITY.md](SECURITY.md).
+
 ## Rate limiting and multi-process safety
 
 `slack-personal-cli` coordinates Slack API requests across multiple local processes.
