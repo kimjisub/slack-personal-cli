@@ -1,5 +1,7 @@
 # slack-personal-cli 💬
 
+[![CI](https://github.com/kimjisub/slack-personal-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/kimjisub/slack-personal-cli/actions/workflows/ci.yml)
+
 A macOS Slack CLI built for agent workflows.
 
 `slack-personal-cli` reads the Slack desktop app's local session data, so you can work with Slack from the terminal without setting up OAuth apps, bot tokens, or manual cookie copying. It is designed for personal automation, AI agents, and fast terminal-native Slack workflows.
@@ -363,6 +365,10 @@ node bin/slk.js auth
 npm link
 npm test
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the module architecture and coding
+conventions, and [CHANGELOG.md](CHANGELOG.md) for release notes. The project has
+**zero runtime dependencies**; CI runs `node --test` on Node 18/20/22.
 
 ## Live Slack integration tests
 
