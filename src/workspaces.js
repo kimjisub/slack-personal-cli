@@ -59,7 +59,13 @@ export function resolveTargets(scope) {
 }
 
 export function workspaceLabel(team) {
-  return team?.name || team?.domain || team?.id || "active";
+  // A name containing U+FFFD came back garbled from the desktop app's binary
+  // store (non-ASCII multi-byte names lose information during extraction); fall
+  // back to the ASCII domain/id so the label stays readable.
+  const name = team?.name;
+  const REPLACEMENT_CHAR = String.fromCharCode(0xfffd);
+  if (name && !name.includes(REPLACEMENT_CHAR)) return name;
+  return team?.domain || team?.id || "active";
 }
 
 /**

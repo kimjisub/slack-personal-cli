@@ -209,6 +209,12 @@ The write tests intentionally require a second opt-in so they do not post to Sla
 - **Session-based** — acts as your user, not a bot. Be mindful of what you send
 - **Draft drop** may fail with `draft_has_conflict` if Slack has that conversation open
 - **Session token** expires on logout — keep Slack app running or rely on cached token
+- **`-A` is paced by the rate limiter** — sweeping many workspaces is serialized
+  (~1.2s/request), so a full cross-workspace run can take a while
+- **Non-ASCII workspace names** can't always be recovered from the desktop app's
+  LevelDB (multi-byte names lose information during extraction). Labels fall back
+  to the workspace domain in that case, and IDs/domains are unaffected, so
+  commands and `-w <name|id>` still work correctly
 
 ## Missing Features & Issues
 

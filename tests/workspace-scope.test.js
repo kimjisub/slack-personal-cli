@@ -93,6 +93,12 @@ test("workspaceLabel falls back through name → domain → id → active", () =
   assert.equal(workspaceLabel(null), "active");
 });
 
+test("workspaceLabel skips a garbled (U+FFFD) name in favor of the domain", () => {
+  const garbled = `THE ${String.fromCharCode(0xfffd)} team`;
+  assert.equal(workspaceLabel({ name: garbled, domain: "the-team", id: "T1" }), "the-team");
+  assert.equal(workspaceLabel({ name: garbled, id: "T1" }), "T1");
+});
+
 // ── CLI scope routing ────────────────────────────────────
 
 async function loadCli() {
