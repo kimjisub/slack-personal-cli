@@ -9,6 +9,14 @@
 
 import { getAllWorkspaceCredentials } from "./auth.js";
 
+/** @typedef {{ token: string, cookie: string }} Credentials */
+/** @typedef {{ id: string, name?: string, domain?: string, url?: string, token?: string }} Team */
+/** @typedef {{ team: Team|null, creds: Credentials|null }} Target */
+
+/**
+ * @param {{ workspace?: string, all?: boolean }} [opts]
+ * @returns {{ mode: "all" } | { mode: "one", query: string } | { mode: "active" }}
+ */
 export function resolveScope(opts = {}) {
   if (opts.all) return { mode: "all" };
   if (opts.workspace) return { mode: "one", query: String(opts.workspace) };
@@ -34,6 +42,9 @@ function matchTeam(teams, query) {
  * Resolve a scope to a list of targets: [{ team, creds }].
  * For "active", creds is null so slackApi falls back to the active workspace
  * (and keeps its auto-refresh behavior).
+ *
+ * @param {ReturnType<typeof resolveScope>} scope
+ * @returns {Target[]}
  */
 export function resolveTargets(scope) {
   if (scope.mode === "all") {

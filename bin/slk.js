@@ -6,7 +6,7 @@
 
 import * as defaultCmd from "../src/commands.js";
 import * as defaultDrafts from "../src/drafts.js";
-import { setJsonMode } from "../src/output.js";
+import { setJsonMode, die } from "../src/output.js";
 import { pathToFileURL } from "node:url";
 import { realpathSync, readFileSync } from "node:fs";
 
@@ -111,20 +111,9 @@ function parseReadWindow(args) {
 
 function parseSendArgs(args) {
   const threadIdx = args.indexOf("--thread");
-  let threadTs = null;
-  let messageParts = [];
-
-  if (threadIdx > -1) {
-    threadTs = args[threadIdx + 1] || null;
-    messageParts = args.slice(2, threadIdx);
-  } else {
-    messageParts = args.slice(2);
-  }
-
-  return {
-    threadTs,
-    message: messageParts.join(" "),
-  };
+  const threadTs = threadIdx > -1 ? args[threadIdx + 1] || null : null;
+  const messageParts = threadIdx > -1 ? args.slice(2, threadIdx) : args.slice(2);
+  return { threadTs, message: messageParts.join(" ") };
 }
 
 function usageError(consoleObj, exit, message) {
@@ -347,8 +336,7 @@ async function main() {
   try {
     await runCli();
   } catch (err) {
-    console.error(`Error: ${err.message}`);
-    process.exit(1);
+    die(err);
   }
 }
 

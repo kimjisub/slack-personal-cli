@@ -3,9 +3,14 @@
  * is the single error-exit path so commands report failures consistently.
  */
 
-/** Print a "Error: …" line to stderr and exit non-zero. */
+/**
+ * Print a "Error: …" line to stderr and exit non-zero.
+ * @param {unknown} message  A string, or an Error/unknown thrown value.
+ * @returns {never}
+ */
 export function die(message) {
-  console.error(`Error: ${message}`);
+  const text = message instanceof Error ? message.message : String(message);
+  console.error(`Error: ${text}`);
   process.exit(1);
 }
 

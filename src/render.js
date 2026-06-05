@@ -55,6 +55,10 @@ export function renderSearchMatch(msg, users, label = null) {
 
 // ── owed ──
 
+/**
+ * @param {Array<{ channelName: string, author: string, ts: string, text: string, permalink?: string }>} rows
+ * @param {string|null} [label]
+ */
 export function renderOwed(rows, label = null) {
   if (label) console.log(`\n=== ${label} ===`);
   if (rows.length === 0) {
@@ -78,6 +82,12 @@ function filterUnreadItems(data, unreadOnly) {
   );
 }
 
+/**
+ * @param {{ threads?: any, items: any[], chMap: Record<string,string>, mutedSet: Set<string> }} data
+ * @param {boolean} unreadOnly
+ * @param {string|null} [label]
+ * @returns {number} number of rows printed
+ */
 export function renderUnreadSection(data, unreadOnly, label = null) {
   if (label) console.log(`\n=== ${label} ===`);
 

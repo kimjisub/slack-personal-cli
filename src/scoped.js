@@ -17,14 +17,31 @@ import {
 } from "./workspaces.js";
 import { emit } from "./output.js";
 
+/**
+ * @template V
+ * @typedef {object} ScopedConfig
+ * @property {(creds: object|null, team: object|null) => Promise<V>} compute
+ * @property {(value: V, label: string|null) => object} toJson
+ * @property {(value: V, label: string|null) => void} render
+ * @property {Record<string, unknown>} [extra]
+ * @property {number} [concurrency]
+ */
+
+/**
+ * @template V
+ * @param {object} opts                Scope flags ({ workspace?, all? }).
+ * @param {ScopedConfig<V>} config     Per-command compute/toJson/render callbacks.
+ * @returns {Promise<void>}
+ */
 export async function runScopedSections(
   opts,
-  { compute, toJson, render, extra = {}, concurrency } = {}
+  { compute, toJson, render, extra = {}, concurrency } = /** @type {any} */ ({})
 ) {
   const scope = resolveScope(opts);
   const targets = resolveTargets(scope);
 
-  let sections; // [{ label, value, error? }]
+  /** @type {Array<{ label: string|null, value?: V, error?: Error }>} */
+  let sections;
   if (targets.length === 1) {
     // Single target: let errors propagate to the top-level handler (exit 1).
     const value = await compute(targets[0].creds, targets[0].team);
@@ -40,7 +57,10 @@ export async function runScopedSections(
   }
 
   const failed = sections.filter((s) => s.error).map((s) => s.label);
-  const ok = sections.filter((s) => !s.error);
+  /** @type {Array<{ label: string|null, value: V }>} */
+  const ok = sections
+    .filter((s) => !s.error)
+    .map((s) => ({ label: s.label, value: /** @type {V} */ (s.value) }));
 
   emit(
     {

@@ -80,9 +80,19 @@ function getRetryAfterMs(res) {
 }
 
 /**
+ * @typedef {{ token: string, cookie: string }} Credentials
+ */
+
+/**
  * Make an authenticated Slack API call.
  * Auto-refreshes credentials on invalid_auth (once).
  * Coordinates requests across processes to avoid overwhelming Slack.
+ *
+ * @param {string} method                 Slack Web API method (e.g. "auth.test").
+ * @param {Record<string, any>} [params]  Method parameters.
+ * @param {Credentials|null} [creds]       Explicit workspace credentials; when
+ *   omitted the active workspace's credentials are used.
+ * @returns {Promise<any>}                 The parsed Slack API response.
  */
 export async function slackApi(method, params = {}, creds = null) {
   return withRateLimitSlot(async () => {
@@ -110,6 +120,7 @@ export async function slackApi(method, params = {}, creds = null) {
         continue;
       }
 
+      /** @type {any} */
       const data = await res.json();
 
       // Auto-refresh only applies to the active workspace; injected creds report the error as-is.
@@ -126,6 +137,12 @@ export async function slackApi(method, params = {}, creds = null) {
 
 /**
  * Paginate through a Slack API method using cursor-based pagination.
+ *
+ * @param {string} method                 Slack Web API method.
+ * @param {Record<string, any>} [params]  Method parameters.
+ * @param {string} [key]                   Response array to accumulate.
+ * @param {Credentials|null} [creds]       Explicit workspace credentials.
+ * @returns {Promise<any>}
  */
 export async function slackPaginate(method, params = {}, key = "channels", creds = null) {
   const results = [];

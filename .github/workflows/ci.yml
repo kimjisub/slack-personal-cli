@@ -18,8 +18,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-      # Zero runtime dependencies, so there is nothing to install.
-      - name: Syntax check
-        run: for f in src/*.js bin/*.js; do node --check "$f"; done
+          cache: npm
+      # Zero runtime dependencies; devDependencies provide lint + typecheck.
+      - name: Install dev tooling
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
       - name: Run tests
-        run: node --test
+        run: npm test

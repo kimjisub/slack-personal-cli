@@ -1,7 +1,7 @@
 {
   "name": "slack-personal-cli",
   "version": "0.5.0",
-  "description": "Session-based Slack CLI for personal accounts \u2014 no bot token or OAuth app required.",
+  "description": "Session-based Slack CLI for personal accounts — no bot token or OAuth app required.",
   "type": "module",
   "license": "MIT",
   "author": "Kim Jisub",
@@ -39,8 +39,16 @@
   "scripts": {
     "dev": "node bin/slk.js",
     "test": "node --test",
-    "test:live": "node --test tests/live-slack.test.js"
+    "test:live": "node --test tests/live-slack.test.js",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run lint && npm run typecheck && npm test"
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.9.1",
+    "eslint": "^10.4.1",
+    "globals": "^17.6.0",
+    "typescript": "^6.0.3"
+  }
 }

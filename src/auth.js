@@ -389,8 +389,7 @@ function extractLocalConfig() {
 
       // .ldb files: parse SSTable index to find the right block
       const footerStart = raw.length - 48;
-      let fpos = footerStart;
-      const [, p1] = decodeVarint(raw, fpos);
+      const [, p1] = decodeVarint(raw, footerStart);
       const [, p2] = decodeVarint(raw, p1);
       const [idxOff, p3] = decodeVarint(raw, p2);
       const [idxSize] = decodeVarint(raw, p3);
@@ -405,7 +404,7 @@ function extractLocalConfig() {
       let epos = 0;
       const blocks = [];
       while (epos < restartsOff) {
-        const [shared, q1] = decodeVarint(idxData, epos);
+        const [, q1] = decodeVarint(idxData, epos);
         const [nonShared, q2] = decodeVarint(idxData, q1);
         const [valueLen, q3] = decodeVarint(idxData, q2);
         const value = idxData.subarray(q3 + nonShared, q3 + nonShared + valueLen);
@@ -484,6 +483,8 @@ export function getCredentialsForTeam(teamId) {
  * Credentials for every logged-in workspace, for cross-workspace fan-out.
  * Reads localConfig + cookie once and does NOT touch the active-workspace cache,
  * so concurrent callers don't clobber each other's credentials.
+ *
+ * @returns {Array<{ team: { id: string, name?: string, domain?: string, url?: string, token?: string }, creds: { token: string, cookie: string } }>}
  */
 export function getAllWorkspaceCredentials() {
   const config = extractLocalConfig();

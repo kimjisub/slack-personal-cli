@@ -33,6 +33,11 @@ async function getUsers() {
   return userCache;
 }
 
+/**
+ * @param {string} nameOrId
+ * @param {import("./api.js").Credentials|null} [creds]
+ * @returns {Promise<string>}
+ */
 async function resolveChannel(nameOrId, creds = null) {
   // Already a channel/DM/group ID
   if (nameOrId.startsWith("C") || nameOrId.startsWith("D") || nameOrId.startsWith("G")) {
@@ -218,6 +223,11 @@ export async function reply(channelRef, threadTs, text) {
   return send(channelRef, text, { threadTs });
 }
 
+/**
+ * @param {string} query
+ * @param {number} count
+ * @param {import("./api.js").Credentials|null} [creds]
+ */
 async function computeSearch(query, count, creds = null) {
   const data = await slackApi("search.messages", { query, count }, creds);
   if (!data.ok) throw new Error(data.error || "search failed");
@@ -233,7 +243,7 @@ export async function search(query, count = 20, opts = {}) {
     try {
       res = await computeSearch(query, count, targets[0].creds);
     } catch (err) {
-      die(err.message);
+      die(err);
     }
     // Real names only available cheaply for the active workspace.
     const users = scope.mode === "active" ? await getUsers() : {};
@@ -387,7 +397,7 @@ export async function showMessage(channelRef, ts) {
     const msg = await fetchMessage(channel, ts);
     printMessage(users, msg, { showTs: true });
   } catch (err) {
-    die(err.message);
+    die(err);
   }
 }
 
@@ -407,7 +417,7 @@ export async function messageContext(channelRef, ts, before = 2, after = 2) {
       console.log();
     }
   } catch (err) {
-    die(err.message);
+    die(err);
   }
 }
 
@@ -424,6 +434,10 @@ export async function users() {
   }
 }
 
+/**
+ * @param {import("./api.js").Credentials|null} [creds]
+ * @returns {Promise<Set<string>>}
+ */
 async function getMutedChannels(creds = null) {
   const prefs = await slackApi("users.prefs.get", {}, creds);
   if (!prefs.ok) return new Set();
@@ -442,6 +456,10 @@ async function getMutedChannels(creds = null) {
 /**
  * Fetch unread/activity data for one workspace (creds = null → active workspace).
  * Returns plain data; rendering is separate so it can be reused per-workspace.
+ */
+/**
+ * @param {import("./api.js").Credentials|null} [creds]
+ * @returns {Promise<{ threads: any, items: any[], chMap: Record<string,string>, mutedSet: Set<string> }>}
  */
 async function computeUnreads(creds = null) {
   const [counts, mutedSet, chData] = await Promise.all([
@@ -462,7 +480,9 @@ async function computeUnreads(creds = null) {
   // Channel names come straight from conversations.list. DM (im) names are
   // resolved lazily below — fetching the full users.list per workspace is far
   // too expensive on large public workspaces (tens of thousands of members).
+  /** @type {Record<string, string>} */
   const chMap = {};
+  /** @type {Record<string, string>} */
   const dmUserId = {};
   if (chData.ok) {
     for (const ch of chData.channels) {
