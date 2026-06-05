@@ -16,14 +16,22 @@ export function die(message) {
 
 let jsonMode = false;
 
+/** Enable or disable global `--json` output. @param {boolean} on */
 export function setJsonMode(on) {
   jsonMode = Boolean(on);
 }
 
+/** @returns {boolean} whether `--json` output is active */
 export function isJsonMode() {
   return jsonMode;
 }
 
+/**
+ * Emit a command result: serialize `data` when `--json` is active, otherwise
+ * run `renderHuman` for terminal output.
+ * @param {unknown} data           Machine-readable result.
+ * @param {() => void} renderHuman  Human renderer, called only in non-JSON mode.
+ */
 export function emit(data, renderHuman) {
   if (jsonMode) {
     console.log(JSON.stringify(data, null, 2));

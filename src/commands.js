@@ -174,6 +174,11 @@ export async function dms() {
   }
 }
 
+/**
+ * @param {string} channelRef  Channel name, ID, @user, or user ID.
+ * @param {number} [count]      Number of recent messages to read.
+ * @param {{ showTs?: boolean, oldest?: string|null, latest?: string|null, expandThreads?: boolean }} [options]
+ */
 export async function read(channelRef, count = 20, options = {}) {
   const { showTs = false, oldest = null, latest = null, expandThreads = false } = options;
   const channel = await resolveChannel(channelRef);
@@ -206,6 +211,11 @@ export async function read(channelRef, count = 20, options = {}) {
   }
 }
 
+/**
+ * @param {string} channelRef
+ * @param {string} text
+ * @param {{ threadTs?: string }} [options]  Send into an existing thread.
+ */
 export async function send(channelRef, text, options = {}) {
   const channel = await resolveChannel(channelRef);
   const params = { channel, text };
@@ -234,6 +244,11 @@ export async function computeSearch(query, count, creds = null) {
   return { total: data.messages?.total || 0, matches: data.messages?.matches || [] };
 }
 
+/**
+ * @param {string} query
+ * @param {number} [count]
+ * @param {{ workspace?: string, all?: boolean }} [opts]  Workspace scope flags.
+ */
 export async function search(query, count = 20, opts = {}) {
   const scope = resolveScope(opts);
   const targets = resolveTargets(scope);
@@ -355,6 +370,10 @@ export async function computeOwed(creds, days) {
   return rows;
 }
 
+/**
+ * Surface mentions you haven't answered (a reply or emoji reaction clears them).
+ * @param {{ workspace?: string, all?: boolean, days?: number }} [opts]
+ */
 export async function owed(opts = {}) {
   const days = opts.days || 30;
   await runScopedSections(opts, {
@@ -523,6 +542,11 @@ export async function computeUnreads(creds = null) {
   return { threads: counts.threads, items, chMap, mutedSet };
 }
 
+/**
+ * Show channel activity / unreads, per workspace.
+ * @param {boolean} [unreadOnly]  Limit to unread/mentioned, non-muted channels.
+ * @param {{ workspace?: string, all?: boolean }} [opts]  Workspace scope flags.
+ */
 export async function activity(unreadOnly = false, opts = {}) {
   await runScopedSections(opts, {
     compute: (creds) => computeUnreads(creds),
@@ -765,6 +789,11 @@ function singleTargetCreds(opts, opName) {
   return resolveTargets(scope)[0].creds;
 }
 
+/**
+ * Mark a channel as read (opt-in). Active or `-w` only — not `-A`.
+ * @param {string} channelRef
+ * @param {{ workspace?: string, all?: boolean }} [opts]
+ */
 export async function mark(channelRef, opts = {}) {
   const creds = singleTargetCreds(opts, "mark");
   const channel = await resolveChannel(channelRef, creds);
