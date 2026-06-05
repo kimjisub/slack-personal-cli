@@ -9,6 +9,8 @@ metadata: {"moltbot":{"emoji":"💬","requires":{"bins":["slk"]},"install":[{"id
 
 Session-based Slack CLI for macOS. Auto-authenticates from the Slack desktop app — no tokens, no OAuth, no app installs. Acts as your user (`xoxc-` session tokens).
 
+**vs other Slack options:** unlike the official Slack MCP (`slackapi/slack-mcp-plugin`, OAuth, one workspace) or `korotovsky/slack-mcp-server` (bring-your-own `xoxc`/`xoxd`/`xoxp`/`xoxb` token, one workspace per token), `slk` needs **no token setup** and works across **all signed-in workspaces at once** (`-A`). It's a CLI, so a human and an agent (over Bash) use the same tool. Unique commands: `inbox -A` (cross-workspace unread digest), `owed` (mentions you haven't answered), `search -A`. macOS-only; full-account access. See README "How it compares" for the full table.
+
 ## Install
 
 Two steps. **Both are required** — installing the CLI alone does not register the skill, and copying `SKILL.md` alone does not give the agent a `slk` binary to call.
@@ -75,10 +77,12 @@ slk read @username [count]            # Read DMs by username
 slk read <channel> --threads          # Auto-expand all threads
 slk read <channel> --from 2026-02-01  # Date range filter
 slk thread <channel> <ts> [count]     # Read thread replies, default 50 (alias: t)
-slk search <query> [count]            # Search messages across workspace
+slk search <query> [count]            # Search messages (add -A to search all workspaces)
+slk owed [--days N]                   # Mentions you haven't answered (emoji reaction counts as answered)
 slk send <channel> <message>          # Send a message (alias: s)
 slk send <channel> <message> --thread <ts>  # Send into an existing thread
 slk react <channel> <ts> <emoji>      # React to a message
+slk mark <channel>                    # Mark a channel as read (opt-in; -w supported, not -A)
 slk reply <channel> <ts> <message>    # Reply to a thread root or thread message
 slk message link <channel> <ts>       # Print the Slack permalink for one message
 slk message show <channel> <ts>       # Show one exact message
@@ -102,6 +106,13 @@ slk draft channel <channel> <message> # Draft a channel message
 slk draft thread <ch> <ts> <message>  # Draft a thread reply
 slk draft dm <user_id|@username> <message>  # Draft a DM
 slk draft drop <draft_id>             # Delete a draft
+
+# Workspace scope (default = active workspace)
+slk inbox unread -w candid            # -w <name|id>: a specific workspace, no active switch
+slk inbox unread -A                   # -A: aggregate across ALL logged-in workspaces
+slk search "deploy" -A                # cross-workspace search, merged newest-first
+slk owed -A --days 14                 # mentions owed across every workspace
+slk inbox unread -A --json | jq .     # --json: machine-readable output (inbox/owed/search/mark)
 
 ```
 
@@ -200,6 +211,12 @@ The write tests intentionally require a second opt-in so they do not post to Sla
 - **Session-based** — acts as your user, not a bot. Be mindful of what you send
 - **Draft drop** may fail with `draft_has_conflict` if Slack has that conversation open
 - **Session token** expires on logout — keep Slack app running or rely on cached token
+- **`-A` is paced by the rate limiter** — sweeping many workspaces is serialized
+  (~1.2s/request), so a full cross-workspace run can take a while
+- **Non-ASCII workspace names** can't always be recovered from the desktop app's
+  LevelDB (multi-byte names lose information during extraction). Labels fall back
+  to the workspace domain in that case, and IDs/domains are unaffected, so
+  commands and `-w <name|id>` still work correctly
 
 ## Missing Features & Issues
 

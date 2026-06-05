@@ -1,0 +1,8 @@
+# 로컬 설계/브레인스토밍 문서 — 커밋하지 않음
+docs/superpowers/
+
+# 에이전트 상태 (oh-my-claudecode)
+.omc/
+
+# Node
+node_modules/

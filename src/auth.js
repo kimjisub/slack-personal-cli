@@ -34,9 +34,22 @@ function resolveSlackDir() {
   process.exit(1);
 }
 
-const SLACK_DIR = resolveSlackDir();
-const LEVELDB_DIR = join(SLACK_DIR, "Local Storage", "leveldb");
-const COOKIES_DB = join(SLACK_DIR, "Cookies");
+// Resolved lazily so that importing this module has no side effects. Unit tests
+// (and CI) can pull it in transitively without a local Slack install; the dir is
+// only resolved when a credential operation actually needs it.
+let _paths = null;
+function paths() {
+  if (!_paths) {
+    const dir = resolveSlackDir();
+    _paths = {
+      dir,
+      leveldb: join(dir, "Local Storage", "leveldb"),
+      cookies: join(dir, "Cookies"),
+    };
+  }
+  return _paths;
+}
+
 const CACHE_DIR = join(homedir(), ".local", "slack-personal-cli");
 const TOKEN_CACHE = join(CACHE_DIR, "token-cache.json");
 const ACTIVE_WORKSPACE = join(CACHE_DIR, "active-workspace");
@@ -45,7 +58,7 @@ let cachedCreds = null;
 
 function getKeychainKey() {
   // Mac App Store Slack uses account "Slack App Store Key", direct download uses "Slack" or "Slack Key"
-  const accounts = SLACK_DIR === SLACK_DIR_APPSTORE
+  const accounts = paths().dir === SLACK_DIR_APPSTORE
     ? ["Slack App Store Key", "Slack Key", "Slack"]
     : ["Slack Key", "Slack", "Slack App Store Key"];
 
@@ -66,7 +79,7 @@ function getKeychainKey() {
 
 function decryptCookie() {
   const tmpDb = join(tmpdir(), `slk_cookies_${Date.now()}.db`);
-  copyFileSync(COOKIES_DB, tmpDb);
+  copyFileSync(paths().cookies, tmpDb);
 
   try {
     const hex = execSync(
@@ -118,7 +131,7 @@ function decryptCookie() {
 }
 
 function extractToken() {
-  const files = readdirSync(LEVELDB_DIR).filter(
+  const files = readdirSync(paths().leveldb).filter(
     (f) => f.endsWith(".ldb") || f.endsWith(".log")
   );
 
@@ -126,7 +139,7 @@ function extractToken() {
 
   for (const file of files) {
     try {
-      const raw = readFileSync(join(LEVELDB_DIR, file));
+      const raw = readFileSync(join(paths().leveldb, file));
       const content = raw.toString("latin1");
 
       // Method 1: direct regex (works for uncompressed entries)
@@ -145,7 +158,7 @@ function extractToken() {
   try {
     const pyResult = spawnSync("python3", ["-c", `
 import os, re
-path = ${JSON.stringify(LEVELDB_DIR)}
+path = ${JSON.stringify(paths().leveldb)}
 for f in os.listdir(path):
     if not (f.endswith(".ldb") or f.endswith(".log")): continue
     data = open(os.path.join(path, f), "rb").read()
@@ -178,7 +191,7 @@ for f in os.listdir(path):
 
   // Method 3: Scan IndexedDB blob files (fallback when LevelDB has no tokens)
   if (tokens.size === 0) {
-    const idbBase = join(SLACK_DIR, "IndexedDB");
+    const idbBase = join(paths().dir, "IndexedDB");
     try {
       const scanDir = (dir) => {
         for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -350,13 +363,13 @@ function snappyDecompress(compressed) {
 // ── localConfig_v2 extraction from LevelDB ──
 
 function extractLocalConfig() {
-  const files = readdirSync(LEVELDB_DIR).filter(
+  const files = readdirSync(paths().leveldb).filter(
     (f) => f.endsWith(".ldb") || f.endsWith(".log")
   );
 
   for (const file of files.sort().reverse()) {
     try {
-      const raw = readFileSync(join(LEVELDB_DIR, file));
+      const raw = readFileSync(join(paths().leveldb, file));
       if (!raw.includes("localConfig_v2")) continue;
 
       if (file.endsWith(".log")) {
@@ -376,8 +389,7 @@ function extractLocalConfig() {
 
       // .ldb files: parse SSTable index to find the right block
       const footerStart = raw.length - 48;
-      let fpos = footerStart;
-      const [, p1] = decodeVarint(raw, fpos);
+      const [, p1] = decodeVarint(raw, footerStart);
       const [, p2] = decodeVarint(raw, p1);
       const [idxOff, p3] = decodeVarint(raw, p2);
       const [idxSize] = decodeVarint(raw, p3);
@@ -392,7 +404,7 @@ function extractLocalConfig() {
       let epos = 0;
       const blocks = [];
       while (epos < restartsOff) {
-        const [shared, q1] = decodeVarint(idxData, epos);
+        const [, q1] = decodeVarint(idxData, epos);
         const [nonShared, q2] = decodeVarint(idxData, q1);
         const [valueLen, q3] = decodeVarint(idxData, q2);
         const value = idxData.subarray(q3 + nonShared, q3 + nonShared + valueLen);
@@ -465,4 +477,23 @@ export function getCredentialsForTeam(teamId) {
   cachedCreds = { token: team.token, cookie };
   saveTokenCache(team.token);
   return cachedCreds;
+}
+
+/**
+ * Credentials for every logged-in workspace, for cross-workspace fan-out.
+ * Reads localConfig + cookie once and does NOT touch the active-workspace cache,
+ * so concurrent callers don't clobber each other's credentials.
+ *
+ * @returns {Array<{ team: { id: string, name?: string, domain?: string, url?: string, token?: string }, creds: { token: string, cookie: string } }>}
+ */
+export function getAllWorkspaceCredentials() {
+  const config = extractLocalConfig();
+  if (!config?.teams) {
+    throw new Error("Could not extract workspace list from Slack app data.");
+  }
+  const cookie = decryptCookie();
+  return Object.values(config.teams).map((team) => ({
+    team,
+    creds: { token: team.token, cookie },
+  }));
 }

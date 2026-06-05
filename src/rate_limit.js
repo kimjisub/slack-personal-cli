@@ -83,7 +83,7 @@ async function acquireLock({ runtimeDir = getRuntimeDir(), staleMs = DEFAULT_LOC
       fs.mkdirSync(lockDir);
       fs.writeFileSync(path.join(lockDir, 'owner.json'), JSON.stringify({ pid: process.pid, acquiredAt: Date.now() }));
       return lockDir;
-    } catch (error) {
+    } catch (/** @type {any} */ error) {
       if (error?.code !== 'EEXIST') throw error;
       if (!tryBreakStaleLock(lockDir, staleMs)) {
         await sleep(lockPollMs);

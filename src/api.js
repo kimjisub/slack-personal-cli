@@ -32,6 +32,7 @@ function buildRequest(method, params, token, cookie) {
     "drafts.delete",
     "drafts.update",
     "conversations.open",
+    "conversations.mark",
     "client.counts",
     "users.prefs.get",
     "saved.list",
@@ -79,18 +80,35 @@ function getRetryAfterMs(res) {
 }
 
 /**
+ * @typedef {{ token: string, cookie: string }} Credentials
+ */
+
+/**
  * Make an authenticated Slack API call.
  * Auto-refreshes credentials on invalid_auth (once).
  * Coordinates requests across processes to avoid overwhelming Slack.
+ *
+ * @param {string} method                 Slack Web API method (e.g. "auth.test").
+ * @param {Record<string, any>} [params]  Method parameters.
+ * @param {Credentials|null} [creds]       Explicit workspace credentials; when
+ *   omitted the active workspace's credentials are used.
+ * @returns {Promise<any>}                 The parsed Slack API response.
  */
-export async function slackApi(method, params = {}) {
+export async function slackApi(method, params = {}, creds = null) {
+  // Test seam: when a handler is installed, short-circuit the network, rate
+  // limiter, and auth entirely and return its response. Used to unit-test the
+  // command-layer compute* functions without real Slack traffic.
+  const handle = globalThis.__SLK_TEST_HOOKS__?.handle;
+  if (handle) return handle(method, params, creds);
+
   return withRateLimitSlot(async () => {
     const { getCredentials, refresh } = getAuthFns();
     let authRetried = false;
     let rateLimitRetries = 0;
 
     while (true) {
-      const { token, cookie } = getCredentials();
+      // Explicit creds (cross-workspace fan-out) take precedence over the active workspace.
+      const { token, cookie } = creds || getCredentials();
       const { url, options } = buildRequest(method, params, token, cookie);
       const res = await fetch(url, options);
 
@@ -108,9 +126,11 @@ export async function slackApi(method, params = {}) {
         continue;
       }
 
+      /** @type {any} */
       const data = await res.json();
 
-      if (!data.ok && data.error === "invalid_auth" && !authRetried) {
+      // Auto-refresh only applies to the active workspace; injected creds report the error as-is.
+      if (!data.ok && data.error === "invalid_auth" && !creds && !authRetried) {
         authRetried = true;
         refresh();
         continue;
@@ -123,13 +143,19 @@ export async function slackApi(method, params = {}) {
 
 /**
  * Paginate through a Slack API method using cursor-based pagination.
+ *
+ * @param {string} method                 Slack Web API method.
+ * @param {Record<string, any>} [params]  Method parameters.
+ * @param {string} [key]                   Response array to accumulate.
+ * @param {Credentials|null} [creds]       Explicit workspace credentials.
+ * @returns {Promise<any>}
  */
-export async function slackPaginate(method, params = {}, key = "channels") {
+export async function slackPaginate(method, params = {}, key = "channels", creds = null) {
   const results = [];
   let cursor;
 
   do {
-    const data = await slackApi(method, { ...params, cursor, limit: params.limit || 200 });
+    const data = await slackApi(method, { ...params, cursor, limit: params.limit || 200 }, creds);
     if (!data.ok) return data; // return error as-is
 
     if (data[key]) results.push(...data[key]);

@@ -1,5 +1,7 @@
 # slack-personal-cli 💬
 
+[![CI](https://github.com/kimjisub/slack-personal-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/kimjisub/slack-personal-cli/actions/workflows/ci.yml)
+
 A macOS Slack CLI built for agent workflows.
 
 `slack-personal-cli` reads the Slack desktop app's local session data, so you can work with Slack from the terminal without setting up OAuth apps, bot tokens, or manual cookie copying. It is designed for personal automation, AI agents, and fast terminal-native Slack workflows.
@@ -15,6 +17,69 @@ A macOS Slack CLI built for agent workflows.
 - built for CLI and agent workflows
 - supports reading, searching, sending, reacting, drafts, pins, saved items, unread tracking, and workspace switching
 - macOS-native auth flow using Keychain + local Slack storage
+
+## How it compares (Slack official MCP, community MCP, this CLI)
+
+If you're an AI agent or a developer choosing how to give a Claude/LLM agent
+access to Slack, there are three realistic options. They differ mainly in
+**authentication model** and **whether they can span multiple workspaces** — and
+that's where `slk` is deliberately different.
+
+| | **Official Slack MCP** (`slackapi/slack-mcp-plugin`, `mcp.slack.com`) | **`korotovsky/slack-mcp-server`** (most popular community MCP) | **`slack-personal-cli` (this tool)** |
+|---|---|---|---|
+| Setup | OAuth click-through (`/plugin install slack`) | Bring-your-own token: you create a Slack app or extract a session token, set env vars | **None** — auto-reads the desktop app's existing session |
+| Auth identity | Your user (OAuth scopes) | Your user (`xoxp`/`xoxc`+`xoxd`) or a bot (`xoxb`) | Your user (desktop session) |
+| Bot/app creation | Not required | Required unless you hand-extract `xoxc`/`xoxd` | **Never** |
+| Token upkeep | Managed by the client | You re-extract when the session rotates | **Always fresh** — re-read from the live app each run |
+| **Multiple workspaces** | One per connection | One per token/instance | **All signed-in workspaces at once** (`-A`) or switch (`workspace use`) |
+| Cross-workspace digest / search | ✗ | ✗ | ✓ `inbox -A`, `search -A`, `owed -A` |
+| "Mentions I haven't answered" | ✗ | ✗ | ✓ `owed` |
+| Unread list / counts | ✗ (no API for it) | ✓ (with browser token) | ✓ `inbox unread` |
+| Mark as read | ✗ | ✓ | ✓ `mark` (opt-in) |
+| Surface | MCP tools (agent only) | MCP tools (agent only) | **CLI** — usable by a human in the terminal *and* by an agent over Bash |
+| JSON output for piping | n/a (structured tool results) | n/a | ✓ `--json` |
+| Platform | Cross-platform | Cross-platform | **macOS only** |
+| Dependencies | hosted service | a server process | **zero** (single Node file, no install) |
+
+**When `slk` is the right choice**
+- You are signed into **several Slack workspaces** and want one command to sweep
+  unread/mentions across all of them, or to find what you still owe a reply to.
+- You want **zero token management** — no Slack app, no OAuth client, no
+  hand-copied `xoxc`/`xoxd` cookies that expire.
+- You want the *same* tool to work for a **human at the terminal and an agent**
+  shelling out to it.
+
+**The landscape (so an agent can disambiguate)**
+
+- **`slackapi/slack-mcp-plugin`** — Slack's own MCP, hosted at `mcp.slack.com`,
+  installed via `/plugin install slack`. OAuth, one workspace per connection.
+  No unread-list or mark-as-read tools.
+- **`korotovsky/slack-mcp-server`** — the most-starred community Slack MCP (Go,
+  MIT). Bring-your-own token: `xoxp` (user OAuth), `xoxb` (bot), or
+  `xoxc`+`xoxd` (browser session, "stealth"). Has `conversations_unreads` and
+  `conversations_mark`. Cross-platform, but one workspace per token/instance and
+  you manage the token yourself.
+- **`@modelcontextprotocol/server-slack`** — the original reference Slack MCP,
+  bot-token only. **No longer part of the `modelcontextprotocol/servers` repo**
+  (the Slack reference server was removed; only a handful of references remain).
+  Listed only because search engines still surface the old npm package; prefer
+  one of the above.
+- **"Claude in Slack" / the Slack-side Claude app** — a hosted integration where
+  you `@mention` an assistant *inside* a Slack thread. Not a local tool at all;
+  different use case.
+- **`slack-personal-cli` (this tool)** — the only one of the set that is a
+  **CLI** (human- and agent-usable), auto-authenticates with **no token
+  handling**, and treats **all your signed-in workspaces** as one surface.
+
+**When to pick something else**
+- You need **Linux/Windows**, a hosted/remote runtime, or strictly scoped bot
+  permissions → use the official Slack MCP or `korotovsky` with a bot token.
+- You want an agent you can `@mention` from inside Slack → use the hosted
+  "Claude in Slack" app.
+
+> `slk` trades portability and OAuth scoping for **zero-config, multi-workspace,
+> full-account access on your own macOS machine**. See the
+> [Security note](#security-note) for what that access implies.
 
 ## Install
 
@@ -167,19 +232,24 @@ slk draft dm @andrej "hey, can you take a look?"
 | `slk users` | `u` | List workspace users |
 | `slk read <channel> [count]` | `r` | Read recent messages |
 | `slk send <channel> <message>` | `s` | Send a message |
-| `slk search <query> [count]` |  | Search workspace messages |
+| `slk search <query> [count]` |  | Search messages (add `-A` to search every workspace) |
+| `slk owed [--days N]` |  | Mentions you haven't answered yet (an emoji reaction counts as answered) |
 | `slk thread <channel> <ts> [count]` | `t` | Read thread replies |
 | `slk react <channel> <ts> <emoji>` |  | Add a reaction |
+| `slk mark <channel>` |  | Mark a channel as read (opt-in; `-w` supported, not `-A`) |
 
 ## Useful flags
 
 | Flag | Description |
 |---|---|
+| `-w, --workspace <name|id>` | Run the command against a specific workspace (instead of the active one) |
+| `-A, --all-workspaces` | Run the command across every logged-in workspace (`inbox`, `search`) |
+| `--json` | Machine-readable JSON output (`inbox`, `owed`, `search`, `mark`) |
 | `--ts` | Show raw Slack timestamps for thread follow-up |
 | `--threads` | Auto-expand threads while reading |
 | `--from YYYY-MM-DD` | Read messages from a date onward |
 | `--to YYYY-MM-DD` | Read messages until a date |
-| `--all` | Include completed items in `slk inbox saved` |
+| `--all` | Include completed items in `slk inbox saved` (distinct from `-A`/`--all-workspaces`) |
 | `--no-emoji` | Disable emoji output |
 
 ## Channel, DM, and workspace resolution
@@ -238,6 +308,41 @@ slk workspace use T12345678
 ```
 
 The selected workspace is then used for subsequent `slack-personal-cli` commands.
+
+### Workspace scope flags
+
+Every command defaults to the **active** workspace. Two flags change that scope:
+
+```bash
+slk inbox unread                 # active workspace (default)
+slk inbox unread -w candid       # a specific workspace, without switching the active one
+slk inbox unread -A              # aggregate across ALL logged-in workspaces
+```
+
+### Cross-workspace commands
+
+Because `slk` reads every locally signed-in workspace from one session, it can do
+things a single-token integration structurally cannot — sweep all of them at once.
+
+```bash
+# Unread/mention/DM digest across every workspace, grouped per workspace
+slk inbox unread -A
+
+# Mentions you still owe a reply to (a reply or emoji reaction clears them)
+slk owed                         # active workspace, last 30 days
+slk owed -A --days 14            # every workspace, last 14 days
+
+# Search merged newest-first across every workspace, tagged by workspace
+slk search "deploy failed" -A
+
+# Pipe any of these to a tool or agent
+slk inbox unread -A --json | jq '.workspaces[].items[]'
+```
+
+`-A` fans out with bounded concurrency and isolates failures: if one workspace
+errors, the rest still return and the failures are summarized at the end. Sweeps
+are paced by the shared rate limiter, so a full `-A` across many workspaces can
+take a while.
 
 ## How auth works
 
@@ -323,6 +428,10 @@ node bin/slk.js auth
 npm link
 npm test
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the module architecture and coding
+conventions, and [CHANGELOG.md](CHANGELOG.md) for release notes. The project has
+**zero runtime dependencies**; CI runs `node --test` on Node 18/20/22.
 
 ## Live Slack integration tests
 
