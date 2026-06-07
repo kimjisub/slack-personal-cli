@@ -1,6 +1,6 @@
 {
   "name": "slack-personal-cli",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Session-based Slack CLI for personal accounts — no bot token or OAuth app required.",
   "type": "module",
   "license": "MIT",
