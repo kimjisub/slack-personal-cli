@@ -166,6 +166,11 @@ export async function runCli(rawArgs = process.argv.slice(2), deps = {}) {
   const showTs = args.includes("--ts");
   const HELP = buildHelp({ supportsEmoji });
 
+  // -w and -A are mutually exclusive (target one workspace vs all of them).
+  if (workspace && all) {
+    return usageError(consoleObj, exit, "Use either -w <workspace> or -A, not both.");
+  }
+
   switch (command) {
     case "auth":
       return cmd.auth();

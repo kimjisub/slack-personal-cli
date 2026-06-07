@@ -4,6 +4,29 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Standardized active-workspace resolution** to match mature multi-context
+  CLIs (kubectl/aws/docker/gcloud). A single resolver now decides the target for
+  scope-less commands with a clear precedence: `-w` flag → `SLACK_CLI_WORKSPACE`
+  env → `workspace use` file → sole login → **error** (no more silent
+  first-found / token-cache guessing). `workspace current` reports the resolved
+  workspace *and its source*, so the readout always matches execution.
+
+### Added
+
+- **`SLACK_CLI_WORKSPACE`** env var to override the active workspace per
+  session/script (like `AWS_PROFILE` / `DOCKER_CONTEXT`).
+- `-w` and `-A` are now rejected together with a clear usage error.
+
+### Fixed
+
+- When no workspace was selected and 2+ were logged in, the `current` readout
+  and actual execution could target different workspaces. They now share one
+  resolver, and an ambiguous state errors instead of guessing.
+
 ## [0.5.0] - 2026-06-04
 
 ### Added

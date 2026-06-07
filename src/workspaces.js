@@ -7,7 +7,7 @@
  *   - { all: true }  → every logged-in workspace
  */
 
-import { getAllWorkspaceCredentials } from "./auth.js";
+import { getAllWorkspaceCredentials, matchTeamId } from "./auth.js";
 
 /** @typedef {{ token: string, cookie: string }} Credentials */
 /** @typedef {{ id: string, name?: string, domain?: string, url?: string, token?: string }} Team */
@@ -21,21 +21,6 @@ export function resolveScope(opts = {}) {
   if (opts.all) return { mode: "all" };
   if (opts.workspace) return { mode: "one", query: String(opts.workspace) };
   return { mode: "active" };
-}
-
-function matchTeam(teams, query) {
-  const q = query.toLowerCase();
-  const list = Object.values(teams);
-  return (
-    list.find((t) => t.id?.toLowerCase() === q) ||
-    list.find((t) => t.domain?.toLowerCase() === q) ||
-    list.find((t) => t.name?.toLowerCase() === q) ||
-    list.find(
-      (t) =>
-        t.name?.toLowerCase().includes(q) || t.domain?.toLowerCase().includes(q)
-    ) ||
-    null
-  );
 }
 
 /**
@@ -54,7 +39,8 @@ export function resolveTargets(scope) {
   if (scope.mode === "one") {
     const all = getAllWorkspaceCredentials();
     const teams = Object.fromEntries(all.map((a) => [a.team.id, a.team]));
-    const team = matchTeam(teams, scope.query);
+    const teamId = matchTeamId(teams, scope.query);
+    const team = teamId ? teams[teamId] : null;
     if (!team) {
       const names = Object.values(teams)
         .map((t) => t.name || t.domain || t.id)
