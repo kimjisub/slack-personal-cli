@@ -4,6 +4,10 @@
 
 A macOS Slack CLI built for agent workflows.
 
+![slk demo — inbox, owed, and search across all your workspaces](assets/demo/slk-demo.gif)
+
+> Demo uses synthetic data; it mirrors the real output format. See [`assets/demo/`](assets/demo/) to regenerate.
+
 `slack-personal-cli` reads the Slack desktop app's local session data, so you can work with Slack from the terminal without setting up OAuth apps, bot tokens, or manual cookie copying. It is designed for personal automation, AI agents, and fast terminal-native Slack workflows.
 
 > Not affiliated with Slack. This tool uses your existing Slack desktop session and acts as your user account.
@@ -17,6 +21,30 @@ A macOS Slack CLI built for agent workflows.
 - built for CLI and agent workflows
 - supports reading, searching, sending, reacting, drafts, pins, saved items, unread tracking, and workspace switching
 - macOS-native auth flow using Keychain + local Slack storage
+
+## Use it from an AI agent
+
+`slk` is a plain CLI, so **any agent that can run a shell command can drive Slack
+through it** — no SDK to wire up, no MCP server to host, no token to mint. It
+works inside **Claude Code**, **Codex**, **Hermes**, **OpenClaw**, or any harness
+that shells out.
+
+- **Structured output:** every read command takes `--json`, so the agent gets
+  parseable data instead of scraping text.
+
+  ```bash
+  slk owed -A --json | jq '.workspaces[].owed[]'   # what needs a reply, as JSON
+  slk inbox unread -A --json                        # cross-workspace unread digest
+  ```
+
+- **Skill file included:** a bundled [`SKILL.md`](SKILL.md) documents the command
+  surface for skill-aware harnesses. Note this is a reference doc shipped in the
+  package — registering it is a separate step (e.g. copy it into
+  `~/.claude/skills/slack-personal/` for Claude Code). Installing the CLI does
+  not auto-register the skill.
+
+- **Safe by default:** the agent only ever sends when you invoke a write command
+  (`send`/`reply`/`react`/`mark`); everything else is read-only.
 
 ## How it compares (Slack official MCP, community MCP, this CLI)
 
