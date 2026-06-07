@@ -1,0 +1,90 @@
+#!/bin/bash
+# Demo stand-in for `slk` — reproduces the REAL output format with SYNTHETIC data
+# (no real workspace content) for a screen recording. Not the real binary.
+#
+# Format fidelity (matches src/render.js):
+#  - timestamps use Date.toLocaleString() — shown here in en-US form
+#  - inbox: "=== Workspace ===" sections, "🧵 Threads — N mentions", "# chan • (N mentions)"
+#  - owed/search: "[time] #chan — author:" then indented text (+ permalink for owed)
+#  - search -A header: "Found N results across M workspaces"
+
+c_dim=$'\033[2m'; c_b=$'\033[1m'; c_cy=$'\033[36m'; c_gn=$'\033[32m'; c_yl=$'\033[33m'; c_rs=$'\033[0m'
+
+cmd="$1"; shift 2>/dev/null
+
+case "$cmd" in
+  inbox)
+    # slk inbox unread -A
+    sleep 0.4
+    printf '\n%s=== Acme Corp ===%s\n' "$c_b" "$c_rs"
+    printf '🧵 Threads — %s2 mentions%s, unreads: true\n\n' "$c_yl" "$c_rs"
+    printf '# engineering •%s (2 mentions)%s\n' "$c_yl" "$c_rs"
+    printf '# general •\n'
+    printf '# incidents •%s (1 mentions)%s\n' "$c_yl" "$c_rs"
+    printf '💬 DM:Jordan Lee •%s (3 mentions)%s\n' "$c_yl" "$c_rs"
+    printf '\n%s=== Weekend Hackers ===%s\n' "$c_b" "$c_rs"
+    printf '# show-and-tell •\n'
+    printf '\n%s=== rust-lang community ===%s\n' "$c_b" "$c_rs"
+    printf '# announcements •\n'
+    printf '# beginners •%s (1 mentions)%s\n' "$c_yl" "$c_rs"
+    printf '\n%s=== side-project ===%s\n' "$c_b" "$c_rs"
+    printf 'No unreads! 🎉\n'
+    ;;
+  owed)
+    if [[ "$*" == *--json* ]]; then
+      # slk owed -A --json  (machine-readable, for piping into agents)
+      sleep 0.4
+      cat <<'JSON'
+{
+  "scope": "all",
+  "days": 30,
+  "workspaces": [
+    {
+      "workspace": "Acme Corp",
+      "owed": [
+        {
+          "channelName": "engineering",
+          "author": "jordan.lee",
+          "ts": "1780681424.000200",
+          "text": "can you review the session-auth PR before standup?",
+          "permalink": "https://acme.slack.com/archives/C04…/p1780…"
+        }
+      ]
+    }
+  ],
+  "failed": []
+}
+JSON
+      exit 0
+    fi
+    # slk owed — mentions you haven't answered
+    sleep 0.5
+    printf '\n%s[6/6/2026, 6:43:44 PM] #engineering — jordan.lee:%s\n' "$c_cy" "$c_rs"
+    printf '  <@you> can you review the session-auth PR before standup?\n'
+    printf '  %shttps://acme.slack.com/archives/C04…/p1780…%s\n\n' "$c_dim" "$c_rs"
+    printf '%s[6/6/2026, 2:02:11 PM] #incidents — priya.n:%s\n' "$c_cy" "$c_rs"
+    printf '  <@you> did the rate-limit hotfix ship to prod?\n'
+    printf '  %shttps://acme.slack.com/archives/C09…/p1780…%s\n\n' "$c_dim" "$c_rs"
+    printf '%s[6/5/2026, 9:10:30 PM] #beginners — newcomer:%s\n' "$c_cy" "$c_rs"
+    printf '  <@you> thanks for the tip earlier — one more question…\n'
+    printf '  %shttps://rust-lang.slack.com/archives/C01…/p1780…%s\n\n' "$c_dim" "$c_rs"
+    ;;
+  search)
+    # slk search "deploy" -A
+    sleep 0.5
+    printf 'Found 3 results across 4 workspaces\n\n'
+    printf '%s[6/6/2026, 5:55:02 PM] [Acme Corp] #engineering — jordan.lee:%s\n' "$c_cy" "$c_rs"
+    printf '  the deploy failed again on the canary box\n\n'
+    printf '%s[6/4/2026, 9:12:40 AM] [rust-lang community] #help — maintainer:%s\n' "$c_cy" "$c_rs"
+    printf '  deploy story for axum apps — here is what we do\n\n'
+    printf '%s[6/2/2026, 11:30:18 AM] [side-project] #ops — you:%s\n' "$c_cy" "$c_rs"
+    printf '  deploy pipeline is green now ✅\n\n'
+    ;;
+  workspace)
+    sleep 0.3
+    printf 'Workspaces:\n\n'
+    printf '  Acme Corp (acme)\n  Weekend Hackers (weekend)\n  rust-lang community (rust-lang)\n  side-project (side-project)%s ← active%s\n' "$c_gn" "$c_rs"
+    ;;
+  *)
+    printf 'slk 0.5.0\n' ;;
+esac
