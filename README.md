@@ -6,7 +6,7 @@ A macOS Slack CLI built for agent workflows.
 
 ![slk demo — inbox, owed, and search across all your workspaces](assets/demo/slk-demo.gif)
 
-> Demo uses synthetic data; it mirrors the real output format. See [`assets/demo/`](assets/demo/) to regenerate.
+> Demo uses synthetic data; it mirrors the real output format.
 
 `slack-personal-cli` reads the Slack desktop app's local session data, so you can work with Slack from the terminal without setting up OAuth apps, bot tokens, or manual cookie copying. It is designed for personal automation, AI agents, and fast terminal-native Slack workflows.
 
