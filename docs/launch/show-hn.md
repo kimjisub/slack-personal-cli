@@ -6,8 +6,11 @@ and **limitations stated up front** earn trust.
 ## Title (≤80 chars)
 
 ```
-Show HN: Slk – a zero-setup macOS Slack CLI that spans all your workspaces
+Show HN: slk – a zero-setup macOS Slack CLI that spans all your workspaces
 ```
+
+**Submit as a URL post** pointing at the repo, then paste the text below as the
+first comment. Best time: Tue–Thu, ~9am US Pacific.
 
 ## First comment (post immediately after submitting)
 
