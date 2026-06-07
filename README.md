@@ -280,6 +280,13 @@ slk draft dm @andrej "hey, can you take a look?"
 | `--all` | Include completed items in `slk inbox saved` (distinct from `-A`/`--all-workspaces`) |
 | `--no-emoji` | Disable emoji output |
 
+## Environment variables
+
+| Variable | Description |
+|---|---|
+| `SLACK_CLI_WORKSPACE` | Active workspace override (name/domain/id). Beats `workspace use`, loses to `-w`. Like `AWS_PROFILE` / `DOCKER_CONTEXT`. |
+| `NO_EMOJI` | Disable emoji output (same as `--no-emoji`). |
+
 ## Channel, DM, and workspace resolution
 
 You can target conversations by:
@@ -345,6 +352,31 @@ Every command defaults to the **active** workspace. Two flags change that scope:
 slk inbox unread                 # active workspace (default)
 slk inbox unread -w candid       # a specific workspace, without switching the active one
 slk inbox unread -A              # aggregate across ALL logged-in workspaces
+```
+
+`-w` and `-A` are mutually exclusive.
+
+### How the active workspace is chosen
+
+When you don't pass `-w`/`-A`, `slk` resolves the target the same way mature
+multi-context CLIs do (kubectl, aws, docker, gcloud) — **first match wins**:
+
+1. **`-w <name>` flag** — explicit, for that one command.
+2. **`SLACK_CLI_WORKSPACE` env var** — a workspace name/domain/id (like
+   `AWS_PROFILE` / `DOCKER_CONTEXT`). Handy for a shell session or a script.
+3. **Active workspace** set by `slk workspace use <name>`.
+4. **Sole login** — if you're signed into exactly one workspace, it's used.
+5. Otherwise (2+ logins, nothing selected) `slk` **errors** and asks you to
+   pick one, rather than silently guessing.
+
+`slk workspace current` prints the resolved workspace **and its source**, so
+what you see is always what commands will use:
+
+```bash
+$ SLACK_CLI_WORKSPACE=candid slk workspace current
+Current workspace: Candid (the-team-candid)
+ID: T05…  URL: https://the-team-candid.slack.com/
+Source: env (SLACK_CLI_WORKSPACE)
 ```
 
 ### Cross-workspace commands

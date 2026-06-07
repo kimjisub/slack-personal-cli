@@ -258,19 +258,26 @@ function validateToken(token, cookie) {
 export function getCredentials(forceRefresh = false) {
   if (cachedCreds && !forceRefresh) return cachedCreds;
 
-  // If an active workspace is set, use its token from localConfig
-  const activeTeam = getActiveWorkspace();
-  if (activeTeam) {
-    try {
-      return getCredentialsForTeam(activeTeam);
-    } catch {
-      // Fall through to default extraction
-    }
+  // Preferred path: resolve the active workspace deterministically from
+  // localConfig (env > active file > sole login > error). No silent guessing.
+  const config = extractLocalConfig();
+  if (config?.teams && Object.keys(config.teams).length > 0) {
+    const { teamId } = resolveActiveWorkspace(config.teams);
+    return getCredentialsForTeam(teamId);
   }
 
+  // Fallback only when localConfig can't be parsed: scrape a token directly.
+  return getCredentialsFromRawExtraction(forceRefresh);
+}
+
+/**
+ * Last-resort credential resolution for machines where localConfig_v2 can't be
+ * read from LevelDB. Validates the cached token, then any token scraped from
+ * LevelDB/IndexedDB. Only reached when there's no parseable workspace list.
+ */
+function getCredentialsFromRawExtraction(forceRefresh = false) {
   const cookie = decryptCookie();
 
-  // Try cached token first (fastest path)
   if (!forceRefresh) {
     const cache = loadTokenCache();
     if (cache?.token && validateToken(cache.token, cookie)) {
@@ -279,23 +286,7 @@ export function getCredentials(forceRefresh = false) {
     }
   }
 
-  // Try localConfig_v2 first (most reliable source of tokens)
-  const config = extractLocalConfig();
-  if (config?.teams) {
-    const teamEntries = Object.values(config.teams);
-    for (const team of teamEntries) {
-      if (validateToken(team.token, cookie)) {
-        saveTokenCache(team.token);
-        cachedCreds = { token: team.token, cookie };
-        return cachedCreds;
-      }
-    }
-  }
-
-  // Extract fresh tokens from LevelDB / IndexedDB
   const candidates = extractToken();
-
-  // Validate each candidate
   for (const token of candidates) {
     if (validateToken(token, cookie)) {
       saveTokenCache(token);
@@ -304,7 +295,6 @@ export function getCredentials(forceRefresh = false) {
     }
   }
 
-  // Fallback: return first candidate
   cachedCreds = { token: candidates[0], cookie };
   return cachedCreds;
 }
@@ -411,6 +401,70 @@ export function getActiveWorkspace() {
     }
   } catch {}
   return null;
+}
+
+/** Env var that overrides the active-workspace file (cf. AWS_PROFILE, DOCKER_CONTEXT). */
+export const ACTIVE_WORKSPACE_ENV = "SLACK_CLI_WORKSPACE";
+
+/**
+ * Find a team id by exact id, then exact domain/name, then partial domain/name.
+ * @param {Record<string, { id: string, name?: string, domain?: string }>} teams
+ * @param {string} query
+ * @returns {string|null} the matching team id, or null
+ */
+export function matchTeamId(teams, query) {
+  const q = String(query).toLowerCase();
+  const ids = Object.keys(teams);
+  return (
+    ids.find((id) => id.toLowerCase() === q) ||
+    ids.find((id) => teams[id].domain?.toLowerCase() === q) ||
+    ids.find((id) => teams[id].name?.toLowerCase() === q) ||
+    ids.find(
+      (id) =>
+        teams[id].name?.toLowerCase().includes(q) ||
+        teams[id].domain?.toLowerCase().includes(q)
+    ) ||
+    null
+  );
+}
+
+/**
+ * Single source of truth for which workspace "active" (no -w/-A) refers to.
+ * Precedence mirrors mature multi-context CLIs (kubectl/aws/docker/gcloud):
+ *   SLACK_CLI_WORKSPACE env  >  active-workspace file  >  sole login  >  error.
+ * Both getCredentials() and `workspace current` resolve through this, so the
+ * readout always matches what commands actually use.
+ *
+ * @param {Record<string, { id: string, name?: string, domain?: string, url?: string }>} teams
+ * @returns {{ teamId: string, source: string }}
+ * @throws if the env value matches nothing, or none is set with 2+ logins
+ */
+export function resolveActiveWorkspace(teams) {
+  const env = process.env[ACTIVE_WORKSPACE_ENV];
+  if (env) {
+    const id = matchTeamId(teams, env);
+    if (!id) {
+      throw new Error(
+        `${ACTIVE_WORKSPACE_ENV}="${env}" does not match any logged-in workspace.`
+      );
+    }
+    return { teamId: id, source: `env (${ACTIVE_WORKSPACE_ENV})` };
+  }
+
+  const file = getActiveWorkspace();
+  if (file && teams[file]) {
+    return { teamId: file, source: "active workspace (workspace use)" };
+  }
+
+  const ids = Object.keys(teams);
+  if (ids.length === 1) {
+    return { teamId: ids[0], source: "sole logged-in workspace" };
+  }
+
+  throw new Error(
+    "No active workspace selected. Pick one with `slk workspace use <name>`, " +
+    `set ${ACTIVE_WORKSPACE_ENV}=<name>, or pass -w <name>.`
+  );
 }
 
 export function setActiveWorkspace(teamId) {

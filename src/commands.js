@@ -3,7 +3,7 @@
  */
 
 import { slackApi, slackPaginate } from "./api.js";
-import { listWorkspaces, getActiveWorkspace, setActiveWorkspace } from "./auth.js";
+import { listWorkspaces, setActiveWorkspace, resolveActiveWorkspace } from "./auth.js";
 import { resolveScope, resolveTargets, mapWorkspaces, workspaceLabel } from "./workspaces.js";
 import { runScopedSections } from "./scoped.js";
 import { emit, die } from "./output.js";
@@ -696,7 +696,13 @@ export async function saved(count = 20, includeCompleted = false) {
 
 export async function workspaces() {
   const teams = listWorkspaces();
-  const activeTeam = getActiveWorkspace();
+  // Mark the workspace commands would actually target. Resolution can be
+  // ambiguous (2+ logins, none selected) — that's not an error for a listing,
+  // so just show no marker in that case.
+  let activeTeam = null;
+  try {
+    activeTeam = resolveActiveWorkspace(teams).teamId;
+  } catch {}
 
   console.log("Workspaces:\n");
   for (const [id, info] of Object.entries(teams)) {
@@ -709,23 +715,18 @@ export async function workspaces() {
 
 export async function currentWorkspace() {
   const teams = listWorkspaces();
-  const activeTeam = getActiveWorkspace();
-
-  if (activeTeam && teams[activeTeam]) {
-    const info = teams[activeTeam];
-    console.log(`Current workspace: ${info.name} (${info.domain})`);
-    console.log(`ID: ${activeTeam}  URL: ${info.url}`);
+  let resolved;
+  try {
+    // Same resolver commands use, so this readout can't drift from execution.
+    resolved = resolveActiveWorkspace(teams);
+  } catch (err) {
+    die(err);
     return;
   }
-
-  const [defaultTeamId, defaultInfo] = Object.entries(teams)[0] || [];
-  if (!defaultTeamId) {
-    die("No workspaces found.");
-  }
-
-  console.log(`Current workspace: ${defaultInfo.name} (${defaultInfo.domain})`);
-  console.log(`ID: ${defaultTeamId}  URL: ${defaultInfo.url}`);
-  console.log("No explicit workspace selected; using Slack's default local workspace.");
+  const info = teams[resolved.teamId];
+  console.log(`Current workspace: ${info.name} (${info.domain})`);
+  console.log(`ID: ${resolved.teamId}  URL: ${info.url}`);
+  console.log(`Source: ${resolved.source}`);
 }
 
 export async function switchWorkspace(query) {

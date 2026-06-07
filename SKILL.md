@@ -108,8 +108,10 @@ slk draft dm <user_id|@username> <message>  # Draft a DM
 slk draft drop <draft_id>             # Delete a draft
 
 # Workspace scope (default = active workspace)
+# Resolution order: -w flag > SLACK_CLI_WORKSPACE env > `workspace use` > sole login > error
 slk inbox unread -w candid            # -w <name|id>: a specific workspace, no active switch
-slk inbox unread -A                   # -A: aggregate across ALL logged-in workspaces
+slk inbox unread -A                   # -A: aggregate across ALL logged-in workspaces (mutually exclusive with -w)
+SLACK_CLI_WORKSPACE=candid slk owed   # env override for a session/script
 slk search "deploy" -A                # cross-workspace search, merged newest-first
 slk owed -A --days 14                 # mentions owed across every workspace
 slk inbox unread -A --json | jq .     # --json: machine-readable output (inbox/owed/search/mark)
