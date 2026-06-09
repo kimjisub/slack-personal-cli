@@ -24,6 +24,10 @@ export function printMessage(users, msg, { showTs = true, prefix = "", indent = 
       console.log(`${indent}📎 ${f.name} (${f.mimetype})`);
     }
   }
+  if (msg.reactions?.length) {
+    const line = msg.reactions.map((r) => `:${r.name}: ${r.count}`).join("   ");
+    console.log(`${indent}${line}`);
+  }
 }
 
 // ── search ──

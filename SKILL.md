@@ -72,7 +72,7 @@ slk auth                              # Test authentication, show user/team
 slk channels                          # List channels (alias: ch)
 slk dms                               # List DM conversations with IDs (alias: dm)
 slk users                             # List workspace users (alias: u)
-slk read <channel> [count]            # Read recent messages, default 20 (alias: r)
+slk read <channel> [count]            # Read recent messages w/ reaction counts, default 20 (alias: r)
 slk read @username [count]            # Read DMs by username
 slk read <channel> --threads          # Auto-expand all threads
 slk read <channel> --from 2026-02-01  # Date range filter

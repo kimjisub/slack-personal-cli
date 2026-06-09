@@ -258,7 +258,7 @@ slk draft dm @andrej "hey, can you take a look?"
 | `slk channels` | `ch` | List channels |
 | `slk dms` | `dm` | List DM conversations |
 | `slk users` | `u` | List workspace users |
-| `slk read <channel> [count]` | `r` | Read recent messages |
+| `slk read <channel> [count]` | `r` | Read recent messages (shows reaction tallies) |
 | `slk send <channel> <message>` | `s` | Send a message |
 | `slk search <query> [count]` |  | Search messages (add `-A` to search every workspace) |
 | `slk owed [--days N]` |  | Mentions you haven't answered yet (an emoji reaction counts as answered) |

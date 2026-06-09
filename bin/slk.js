@@ -39,7 +39,7 @@ Core commands:
   slk channels          (ch)             List channels with member counts
   slk dms               (dm)             List DM conversations with IDs
   slk users             (u)              List workspace users with statuses
-  slk read <ch> [n]     (r)              Read last n messages (default: 20)
+  slk read <ch> [n]     (r)              Read last n messages (default: 20; shows reaction counts)
   slk send <ch> <msg>   (s)              Send a message
   slk search <query> [n]                 Search messages (add -A to search all workspaces)
   slk owed [--days N]                     Mentions you haven't answered (emoji counts as answered)
