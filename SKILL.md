@@ -11,45 +11,24 @@ Session-based Slack CLI for macOS. Auto-authenticates from the Slack desktop app
 
 **vs other Slack options:** unlike the official Slack MCP (`slackapi/slack-mcp-plugin`, OAuth, one workspace) or `korotovsky/slack-mcp-server` (bring-your-own `xoxc`/`xoxd`/`xoxp`/`xoxb` token, one workspace per token), `slk` needs **no token setup** and works across **all signed-in workspaces at once** (`-A`). It's a CLI, so a human and an agent (over Bash) use the same tool. Unique commands: `inbox -A` (cross-workspace unread digest), `owed` (mentions you haven't answered), `search -A`. macOS-only; full-account access. See README "How it compares" for the full table.
 
-## Install
+## Setup
 
-Two steps. **Both are required** — installing the CLI alone does not register the skill, and copying `SKILL.md` alone does not give the agent a `slk` binary to call.
+You're reading this as a registered skill, so the skill itself is already in place. What this skill actually depends on is the **`slk` binary on your `PATH`** — this file is only documentation; `slk` is what talks to Slack.
 
-### Step 1 — Install the `slk` CLI on PATH
+Confirm it's available:
 
-Direct from GitHub (this repo is the package; it is **not** published to the npm registry). Requires Node.js ≥ 18 and macOS with the Slack desktop app installed and logged in.
+```bash
+slk --version   # → slk 0.6.1 (or newer)
+slk auth        # prints the authenticated user / workspace
+```
+
+If you get `command not found`, install the CLI from GitHub (this repo is the package; it is **not** on the npm registry). Requires Node.js ≥ 18 and macOS with the Slack desktop app installed and logged in:
 
 ```bash
 npm install -g github:kimjisub/slack-personal-cli
 ```
 
-Verify:
-
-```bash
-slk --version   # → slk 0.4.0 (or newer)
-slk auth        # prints authenticated user / workspace
-```
-
-Reinstall to pick up upstream changes uses the same command — npm refetches from GitHub.
-
-### Step 2 — Register `SKILL.md` with your harness
-
-The CLI is on PATH; now your AI harness needs to know the skill exists. Drop this `SKILL.md` into the harness's skill directory:
-
-| Harness | Skill path |
-|---|---|
-| Claude Code (user-level) | `~/.claude/skills/slack-personal/SKILL.md` |
-| Claude Code (project-level) | `<repo>/.claude/skills/slack-personal/SKILL.md` |
-| Codex / Copilot CLI / Gemini CLI | refer to that harness's skill directory — the `SKILL.md` format is portable, only the install location differs |
-
-Agent-friendly one-liner (covers both steps; Claude Code user-level shown):
-
-```bash
-npm install -g github:kimjisub/slack-personal-cli && \
-mkdir -p ~/.claude/skills/slack-personal && \
-curl -sL https://raw.githubusercontent.com/kimjisub/slack-personal-cli/main/SKILL.md \
-  -o ~/.claude/skills/slack-personal/SKILL.md
-```
+The same command upgrades to the latest `main`. First-time setup from scratch — including registering this `SKILL.md` with a harness that doesn't have it yet — is covered in the [README](https://github.com/kimjisub/slack-personal-cli#install).
 
 ### How to invoke
 
