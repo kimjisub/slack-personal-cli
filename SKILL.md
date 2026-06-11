@@ -11,45 +11,59 @@ Session-based Slack CLI for macOS. Auto-authenticates from the Slack desktop app
 
 **vs other Slack options:** unlike the official Slack MCP (`slackapi/slack-mcp-plugin`, OAuth, one workspace) or `korotovsky/slack-mcp-server` (bring-your-own `xoxc`/`xoxd`/`xoxp`/`xoxb` token, one workspace per token), `slk` needs **no token setup** and works across **all signed-in workspaces at once** (`-A`). It's a CLI, so a human and an agent (over Bash) use the same tool. Unique commands: `inbox -A` (cross-workspace unread digest), `owed` (mentions you haven't answered), `search -A`. macOS-only; full-account access. See README "How it compares" for the full table.
 
-## Install
+## Setup & updates
 
-Two steps. **Both are required** — installing the CLI alone does not register the skill, and copying `SKILL.md` alone does not give the agent a `slk` binary to call.
+You're reading this as an already-registered skill, so registration itself is done. This section is for the agent maintaining the install. The skill has **two parts that must stay version-aligned**:
 
-### Step 1 — Install the `slk` CLI on PATH
+1. **the `slk` binary on `PATH`** — what actually talks to Slack
+2. **this `SKILL.md`** — the command reference you're reading
 
-Direct from GitHub (this repo is the package; it is **not** published to the npm registry). Requires Node.js ≥ 18 and macOS with the Slack desktop app installed and logged in.
+New commands land in both at once, so a stale binary or a stale skill file will disagree. Keep them on the same version.
+
+> **First-time install from scratch** (neither part exists yet — e.g. registering this skill in a brand-new harness) is a human bootstrap step, not something to run from here. See the [README → Install](https://github.com/kimjisub/slack-personal-cli#install).
+
+### 1. Check current state
+
+```bash
+slk --version   # → slk 0.6.1 (or newer). `command not found` = binary missing
+slk auth        # confirms credentials resolve for the active workspace
+```
+
+### 2. Install the binary (only if missing)
+
+This repo *is* the package; it is **not** on the npm registry. Requires Node.js ≥ 18 and macOS with the Slack desktop app installed and logged in.
 
 ```bash
 npm install -g github:kimjisub/slack-personal-cli
 ```
 
-Verify:
+### 3. Check whether an update is available
+
+Updating only matters once installed, so check before acting. Compare the installed binary against the latest on `main`:
 
 ```bash
-slk --version   # → slk 0.4.0 (or newer)
-slk auth        # prints authenticated user / workspace
+slk --version   # installed version
+curl -s https://raw.githubusercontent.com/kimjisub/slack-personal-cli/main/package.json \
+  | grep '"version"'   # latest published to the repo
 ```
 
-Reinstall to pick up upstream changes uses the same command — npm refetches from GitHub.
+An update is worth doing when the two versions differ, or when a command documented in this file isn't recognized by the installed binary (a sign the skill file is ahead of the binary). If they already match, **do nothing** — there's no update to apply.
 
-### Step 2 — Register `SKILL.md` with your harness
+### 4. Apply the update — confirm with the user first
 
-The CLI is on PATH; now your AI harness needs to know the skill exists. Drop this `SKILL.md` into the harness's skill directory:
-
-| Harness | Skill path |
-|---|---|
-| Claude Code (user-level) | `~/.claude/skills/slack-personal/SKILL.md` |
-| Claude Code (project-level) | `<repo>/.claude/skills/slack-personal/SKILL.md` |
-| Codex / Copilot CLI / Gemini CLI | refer to that harness's skill directory — the `SKILL.md` format is portable, only the install location differs |
-
-Agent-friendly one-liner (covers both steps; Claude Code user-level shown):
+Updating replaces a global binary **and** overwrites the registered skill file. Both modify the user's machine, so **do not run these automatically.** Tell the user the installed → latest version jump and ask before proceeding. Once they agree, refresh **both** parts together so they stay aligned:
 
 ```bash
-npm install -g github:kimjisub/slack-personal-cli && \
-mkdir -p ~/.claude/skills/slack-personal && \
+# a. binary — npm re-fetches the latest main
+npm install -g github:kimjisub/slack-personal-cli
+
+# b. this skill file — overwrite the registered copy with the latest from the repo
+#    (path shown for user-level Claude Code; swap in your harness's skill dir)
 curl -sL https://raw.githubusercontent.com/kimjisub/slack-personal-cli/main/SKILL.md \
   -o ~/.claude/skills/slack-personal/SKILL.md
 ```
+
+After step (b), re-read the refreshed `SKILL.md` before relying on any newly documented command — the copy you started from may predate it. Confirm the result with `slk --version`.
 
 ### How to invoke
 

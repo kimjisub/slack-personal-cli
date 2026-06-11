@@ -168,6 +168,8 @@ curl -sL https://raw.githubusercontent.com/kimjisub/slack-personal-cli/main/SKIL
 
 For project-scoped Claude Code skills, use `<repo>/.claude/skills/slack-personal/SKILL.md` instead. For other harnesses, refer to their skill registration docs — the `SKILL.md` format itself is portable.
 
+Updating later — refreshing both the `slk` binary and the registered `SKILL.md` together so they stay version-aligned — is driven from inside the skill; see the "Setup & updates" section of [`SKILL.md`](SKILL.md). This README covers the first-time bootstrap only.
+
 ### Troubleshooting: `slk` is silent (exit 0, no output)
 
 You are on a pre-0.3.1 version. The previous main-module guard compared `process.argv[1]` to `import.meta.url` directly, which never matched for symlinked global bins, so `main()` was never invoked. Fix:
