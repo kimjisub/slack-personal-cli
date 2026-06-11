@@ -9,6 +9,7 @@ import {
   renderUnreadSection,
   unreadsToJson,
   renderOwed,
+  printMessage,
 } from "../src/render.js";
 
 function capture(fn) {
@@ -60,6 +61,31 @@ test("normalizeMatch projects a search match into a stable shape", () => {
     text: "hi",
     permalink: "https://x/y",
   });
+});
+
+// ── printMessage ─────────────────────────────────────────
+
+test("printMessage prints reaction tallies as :name: count", () => {
+  const msg = {
+    user: "U1",
+    ts: "123.4",
+    text: "lunch?",
+    reactions: [
+      { name: "pizza", count: 5, users: ["U2"] },
+      { name: "ramen", count: 2, users: ["U3"] },
+    ],
+  };
+  const logs = capture(() => printMessage({ U1: "Alice" }, msg));
+  const joined = logs.join("\n");
+  assert.ok(joined.includes(":pizza: 5"));
+  assert.ok(joined.includes(":ramen: 2"));
+});
+
+test("printMessage omits the reaction line when there are none", () => {
+  const msg = { user: "U1", ts: "123.4", text: "hi" };
+  const logs = capture(() => printMessage({ U1: "Alice" }, msg));
+  // The reaction line is the only one shaped like `:name: count`.
+  assert.ok(!logs.some((l) => /:\w+:\s+\d+/.test(l)));
 });
 
 // ── unread filtering (shared by render + json) ───────────
