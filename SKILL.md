@@ -37,9 +37,21 @@ This repo *is* the package; it is **not** on the npm registry. Requires Node.js 
 npm install -g github:kimjisub/slack-personal-cli
 ```
 
-### 3. Update to the latest version
+### 3. Check whether an update is available
 
-Updating is the skill's job. Refresh **both** parts together, then re-read this file:
+Updating only matters once installed, so check before acting. Compare the installed binary against the latest on `main`:
+
+```bash
+slk --version   # installed version
+curl -s https://raw.githubusercontent.com/kimjisub/slack-personal-cli/main/package.json \
+  | grep '"version"'   # latest published to the repo
+```
+
+An update is worth doing when the two versions differ, or when a command documented in this file isn't recognized by the installed binary (a sign the skill file is ahead of the binary). If they already match, **do nothing** — there's no update to apply.
+
+### 4. Apply the update — confirm with the user first
+
+Updating replaces a global binary **and** overwrites the registered skill file. Both modify the user's machine, so **do not run these automatically.** Tell the user the installed → latest version jump and ask before proceeding. Once they agree, refresh **both** parts together so they stay aligned:
 
 ```bash
 # a. binary — npm re-fetches the latest main
@@ -51,7 +63,7 @@ curl -sL https://raw.githubusercontent.com/kimjisub/slack-personal-cli/main/SKIL
   -o ~/.claude/skills/slack-personal/SKILL.md
 ```
 
-After step (b), re-read the refreshed `SKILL.md` before relying on any newly documented command — the copy you started from may predate it. Confirm alignment with `slk --version`.
+After step (b), re-read the refreshed `SKILL.md` before relying on any newly documented command — the copy you started from may predate it. Confirm the result with `slk --version`.
 
 ### How to invoke
 
