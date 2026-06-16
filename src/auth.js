@@ -74,8 +74,8 @@ function getKeychainKey() {
           { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }
         ).trim()
       );
-    } catch (err) {
-      errors.push(`${account}: ${err?.status ?? "?"}`);
+    } catch {
+      errors.push(`${account}: failed`);
     }
   }
 
@@ -148,7 +148,8 @@ function decryptCookie() {
   } catch (err) {
     const cache = loadCookieCache();
     if (cache?.cookie) return cache.cookie;
-    console.error(err?.message || String(err));
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(message);
     process.exit(1);
   }
 }
