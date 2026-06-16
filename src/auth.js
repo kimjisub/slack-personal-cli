@@ -7,7 +7,7 @@
  */
 
 import { execSync, spawnSync } from "child_process";
-import { readFileSync, readdirSync, copyFileSync, unlinkSync, writeFileSync } from "fs";
+import { readFileSync, readdirSync, copyFileSync, unlinkSync, writeFileSync, chmodSync } from "fs";
 import { join } from "path";
 import { homedir, tmpdir } from "os";
 import { pbkdf2Sync } from "crypto";
@@ -54,6 +54,7 @@ function paths() {
 
 const CACHE_DIR = join(homedir(), ".local", "slack-personal-cli");
 const TOKEN_CACHE = join(CACHE_DIR, "token-cache.json");
+const COOKIE_CACHE = join(CACHE_DIR, "cookie-cache.json");
 const ACTIVE_WORKSPACE = join(CACHE_DIR, "active-workspace");
 
 let cachedCreds = null;
@@ -64,6 +65,7 @@ function getKeychainKey() {
     ? ["Slack App Store Key", "Slack Key", "Slack"]
     : ["Slack Key", "Slack", "Slack App Store Key"];
 
+  const errors = [];
   for (const account of accounts) {
     try {
       return Buffer.from(
@@ -72,14 +74,20 @@ function getKeychainKey() {
           { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }
         ).trim()
       );
-    } catch {}
+    } catch (err) {
+      errors.push(`${account}: ${err?.status ?? "?"}`);
+    }
   }
 
-  console.error("Could not find Slack Safe Storage key in Keychain.");
-  process.exit(1);
+  throw new Error(
+    "Could not read Slack Safe Storage key from Keychain. " +
+    "If Slack works in a normal Terminal but fails from a background agent, " +
+    "run `slk auth` once in Terminal after installing this version so slk can cache the Slack cookie. " +
+    `Tried accounts: ${errors.join(", ")}`
+  );
 }
 
-function decryptCookie() {
+function decryptCookieFromKeychain() {
   const tmpDb = join(tmpdir(), `slk_cookies_${Date.now()}.db`);
   copyFileSync(paths().cookies, tmpDb);
 
@@ -126,9 +134,22 @@ function decryptCookie() {
 
     const idx = text.indexOf("xoxd-");
     if (idx < 0) throw new Error("No xoxd- found in decrypted cookie");
-    return text.substring(idx);
+    const cookie = text.substring(idx);
+    saveCookieCache(cookie);
+    return cookie;
   } finally {
     try { unlinkSync(tmpDb); } catch {}
+  }
+}
+
+function decryptCookie() {
+  try {
+    return decryptCookieFromKeychain();
+  } catch (err) {
+    const cache = loadCookieCache();
+    if (cache?.cookie) return cache.cookie;
+    console.error(err?.message || String(err));
+    process.exit(1);
   }
 }
 
@@ -234,10 +255,28 @@ function loadTokenCache() {
   return null;
 }
 
+function loadCookieCache() {
+  try {
+    if (existsSync(COOKIE_CACHE)) {
+      return JSON.parse(readFileSync(COOKIE_CACHE, "utf-8"));
+    }
+  } catch {}
+  return null;
+}
+
 function saveTokenCache(token) {
   try {
     mkdirSync(CACHE_DIR, { recursive: true });
     writeFileSync(TOKEN_CACHE, JSON.stringify({ token, ts: Date.now() }));
+    chmodSync(TOKEN_CACHE, 0o600);
+  } catch {}
+}
+
+function saveCookieCache(cookie) {
+  try {
+    mkdirSync(CACHE_DIR, { recursive: true });
+    writeFileSync(COOKIE_CACHE, JSON.stringify({ cookie, ts: Date.now() }));
+    chmodSync(COOKIE_CACHE, 0o600);
   } catch {}
 }
 
