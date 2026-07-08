@@ -38,7 +38,7 @@ async function getUsers() {
  * @param {import("./api.js").Credentials|null} [creds]
  * @returns {Promise<string>}
  */
-async function resolveChannel(nameOrId, creds = null) {
+export async function resolveChannel(nameOrId, creds = null) {
   // Already a channel/DM/group ID
   if (nameOrId.startsWith("C") || nameOrId.startsWith("D") || nameOrId.startsWith("G")) {
     return nameOrId;
@@ -811,5 +811,143 @@ export async function mark(channelRef, opts = {}) {
   }
   emit({ ok: true, channel, ts }, () => {
     console.log(`✓ Marked ${channelRef} as read (up to ts ${ts})`);
+  });
+}
+
+// ── message edit / delete ─────────────────────────────────
+
+/**
+ * Edit one of your own messages.
+ * @param {string} channelRef
+ * @param {string} ts
+ * @param {string} text  New message text.
+ */
+export async function editMessage(channelRef, ts, text) {
+  const channel = await resolveChannel(channelRef);
+  const data = await slackApi("chat.update", { channel, ts, text });
+  if (!data.ok) die(data.error);
+  emit({ ok: true, channel, ts }, () => {
+    console.log(`✏️  Edited message ${ts} in ${channelRef}`);
+  });
+}
+
+/**
+ * Delete one of your own messages.
+ * @param {string} channelRef
+ * @param {string} ts
+ */
+export async function deleteMessage(channelRef, ts) {
+  const channel = await resolveChannel(channelRef);
+  const data = await slackApi("chat.delete", { channel, ts });
+  if (!data.ok) die(data.error);
+  emit({ ok: true, channel, ts }, () => {
+    console.log(`🗑️  Deleted message ${ts} in ${channelRef}`);
+  });
+}
+
+// ── reaction removal ──────────────────────────────────────
+
+/**
+ * Remove a reaction you added.
+ * @param {string} channelRef
+ * @param {string} ts
+ * @param {string} emoji  Emoji name, with or without surrounding colons.
+ */
+export async function unreact(channelRef, ts, emoji) {
+  const channel = await resolveChannel(channelRef);
+  const name = emoji.replace(/:/g, "");
+  const data = await slackApi("reactions.remove", { channel, timestamp: ts, name });
+  if (!data.ok) die(data.error);
+  emit({ ok: true, channel, ts, name }, () => {
+    console.log(`✅ Removed :${name}:`);
+  });
+}
+
+// ── pins ──────────────────────────────────────────────────
+
+/**
+ * Pin a message to a channel.
+ * @param {string} channelRef
+ * @param {string} ts
+ */
+export async function pinAdd(channelRef, ts) {
+  const channel = await resolveChannel(channelRef);
+  const data = await slackApi("pins.add", { channel, timestamp: ts });
+  if (!data.ok) die(data.error);
+  emit({ ok: true, channel, ts }, () => {
+    console.log(`📌 Pinned ${ts} in ${channelRef}`);
+  });
+}
+
+/**
+ * Remove a pinned message from a channel.
+ * @param {string} channelRef
+ * @param {string} ts
+ */
+export async function pinRemove(channelRef, ts) {
+  const channel = await resolveChannel(channelRef);
+  const data = await slackApi("pins.remove", { channel, timestamp: ts });
+  if (!data.ok) die(data.error);
+  emit({ ok: true, channel, ts }, () => {
+    console.log(`📌 Unpinned ${ts} in ${channelRef}`);
+  });
+}
+
+// ── saved for later ───────────────────────────────────────
+
+/**
+ * Add a message to "Saved for later". Slack's saved list is backed by the
+ * stars system, so this uses stars.add (saved.list reads the same store).
+ * @param {string} channelRef
+ * @param {string} ts
+ */
+export async function savedAdd(channelRef, ts) {
+  const channel = await resolveChannel(channelRef);
+  const data = await slackApi("stars.add", { channel, timestamp: ts });
+  if (!data.ok) die(data.error);
+  emit({ ok: true, channel, ts }, () => {
+    console.log(`🔖 Saved ${ts} from ${channelRef}`);
+  });
+}
+
+/**
+ * Remove a message from "Saved for later".
+ * @param {string} channelRef
+ * @param {string} ts
+ */
+export async function savedRemove(channelRef, ts) {
+  const channel = await resolveChannel(channelRef);
+  const data = await slackApi("stars.remove", { channel, timestamp: ts });
+  if (!data.ok) die(data.error);
+  emit({ ok: true, channel, ts }, () => {
+    console.log(`🔖 Unsaved ${ts} from ${channelRef}`);
+  });
+}
+
+// ── channel membership ────────────────────────────────────
+
+/**
+ * Join a channel.
+ * @param {string} channelRef
+ */
+export async function joinChannel(channelRef) {
+  const channel = await resolveChannel(channelRef);
+  const data = await slackApi("conversations.join", { channel });
+  if (!data.ok) die(data.error);
+  emit({ ok: true, channel }, () => {
+    console.log(`✅ Joined ${channelRef}`);
+  });
+}
+
+/**
+ * Leave a channel.
+ * @param {string} channelRef
+ */
+export async function leaveChannel(channelRef) {
+  const channel = await resolveChannel(channelRef);
+  const data = await slackApi("conversations.leave", { channel });
+  if (!data.ok) die(data.error);
+  emit({ ok: true, channel }, () => {
+    console.log(`👋 Left ${channelRef}`);
   });
 }

@@ -21,7 +21,9 @@ export function printMessage(users, msg, { showTs = true, prefix = "", indent = 
   console.log(`${indent}${msg.text || ""}`);
   if (msg.files?.length) {
     for (const f of msg.files) {
-      console.log(`${indent}📎 ${f.name} (${f.mimetype})`);
+      // Surface the file id so it can be fed straight to `slk download <id>`.
+      const idTag = f.id ? ` id:${f.id}` : "";
+      console.log(`${indent}📎 ${f.name} (${f.mimetype})${idTag}`);
     }
   }
   if (msg.reactions?.length) {

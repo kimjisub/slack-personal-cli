@@ -6,6 +6,9 @@
 
 import * as defaultCmd from "../src/commands.js";
 import * as defaultDrafts from "../src/drafts.js";
+import * as defaultStatus from "../src/status.js";
+import * as defaultDnd from "../src/dnd.js";
+import * as defaultFiles from "../src/files.js";
 import { setJsonMode, die } from "../src/output.js";
 import { pathToFileURL } from "node:url";
 import { realpathSync, readFileSync } from "node:fs";
@@ -33,6 +36,8 @@ Preferred command families:
   slk message link <ch> <ts>             Show the Slack permalink for a message
   slk message show <ch> <ts>             Show one exact message
   slk message context <ch> <ts> [b] [a]  Show surrounding message context
+  slk status "<text>" [emoji] [--for N]  Set custom status (status clear to reset)
+  slk dnd <minutes>                      Snooze notifications (dnd off | dnd status)
 
 Core commands:
   slk auth                               Test auth, show user/team info
@@ -41,10 +46,18 @@ Core commands:
   slk users             (u)              List workspace users with statuses
   slk read <ch> [n]     (r)              Read last n messages (default: 20; shows reaction counts)
   slk send <ch> <msg>   (s)              Send a message
+  slk edit <ch> <ts> <msg>               Edit one of your messages
+  slk delete <ch> <ts>  (del)            Delete one of your messages
   slk search <query> [n]                 Search messages (add -A to search all workspaces)
   slk owed [--days N]                     Mentions you haven't answered (emoji counts as answered)
   slk thread <ch> <ts> [n] (t)           Read thread replies (default: 50)
   slk react <ch> <ts> <emoji>            Add emoji reaction
+  slk unreact <ch> <ts> <emoji>          Remove an emoji reaction
+  slk pin <ch> <ts>  /  unpin <ch> <ts>  Pin / unpin a message
+  slk save <ch> <ts> /  unsave <ch> <ts> Save / unsave a message for later
+  slk join <ch>      /  leave <ch>       Join / leave a channel
+  slk upload <file> <ch> [--thread <ts>] [--comment <text>]   Upload & share a file
+  slk download <file_id> [out]  (dl)     Download a file
   slk mark <ch>                          Mark a channel as read (opt-in; -w supported, not -A)
 
 Workspace scope (default: active workspace):
@@ -160,6 +173,9 @@ export async function runCli(rawArgs = process.argv.slice(2), deps = {}) {
   const command = args[0];
   const cmd = deps.cmd ?? defaultCmd;
   const drafts = deps.drafts ?? defaultDrafts;
+  const status = deps.status ?? defaultStatus;
+  const dnd = deps.dnd ?? defaultDnd;
+  const files = deps.files ?? defaultFiles;
   const consoleObj = deps.console ?? console;
   const exit = deps.exit ?? ((code) => process.exit(code));
   const supportsEmoji = !process.env.NO_EMOJI && !args.includes("--no-emoji");
@@ -239,6 +255,74 @@ export async function runCli(rawArgs = process.argv.slice(2), deps = {}) {
     case "react":
       if (!args[1] || !args[2] || !args[3]) return usageError(consoleObj, exit, "Usage: slk react <channel> <ts> <emoji>");
       return cmd.react(args[1], args[2], args[3]);
+
+    case "unreact":
+      if (!args[1] || !args[2] || !args[3]) return usageError(consoleObj, exit, "Usage: slk unreact <channel> <ts> <emoji>");
+      return cmd.unreact(args[1], args[2], args[3]);
+
+    case "edit":
+      if (!args[1] || !args[2] || !args[3]) return usageError(consoleObj, exit, "Usage: slk edit <channel> <ts> <message>");
+      return cmd.editMessage(args[1], args[2], args.slice(3).join(" "));
+
+    case "delete":
+    case "del":
+      if (!args[1] || !args[2]) return usageError(consoleObj, exit, "Usage: slk delete <channel> <ts>");
+      return cmd.deleteMessage(args[1], args[2]);
+
+    case "pin":
+      if (!args[1] || !args[2]) return usageError(consoleObj, exit, "Usage: slk pin <channel> <ts>");
+      return cmd.pinAdd(args[1], args[2]);
+
+    case "unpin":
+      if (!args[1] || !args[2]) return usageError(consoleObj, exit, "Usage: slk unpin <channel> <ts>");
+      return cmd.pinRemove(args[1], args[2]);
+
+    case "save":
+      if (!args[1] || !args[2]) return usageError(consoleObj, exit, "Usage: slk save <channel> <ts>");
+      return cmd.savedAdd(args[1], args[2]);
+
+    case "unsave":
+      if (!args[1] || !args[2]) return usageError(consoleObj, exit, "Usage: slk unsave <channel> <ts>");
+      return cmd.savedRemove(args[1], args[2]);
+
+    case "join":
+      if (!args[1]) return usageError(consoleObj, exit, "Usage: slk join <channel>");
+      return cmd.joinChannel(args[1]);
+
+    case "leave":
+      if (!args[1]) return usageError(consoleObj, exit, "Usage: slk leave <channel>");
+      return cmd.leaveChannel(args[1]);
+
+    case "status": {
+      if (args[1] === "clear") return status.clearStatus();
+      if (!args[1]) return usageError(consoleObj, exit, 'Usage: slk status "<text>" [emoji] [--for <minutes>] | slk status clear');
+      const forIdx = args.indexOf("--for");
+      const expire = forIdx > -1 ? parseInt(args[forIdx + 1], 10) || 0 : 0;
+      const pos = forIdx > -1 ? args.slice(1, forIdx) : args.slice(1);
+      return status.setStatus(pos[0], pos[1] || "", expire);
+    }
+
+    case "dnd": {
+      const sub = args[1];
+      if (sub === "off" || sub === "end") return dnd.endSnooze();
+      if (sub === "status" || sub === "info") return dnd.dndStatus();
+      if (!args[1]) return usageError(consoleObj, exit, "Usage: slk dnd <minutes> | dnd off | dnd status");
+      return dnd.snooze(args[1]);
+    }
+
+    case "upload": {
+      if (!args[1] || !args[2]) return usageError(consoleObj, exit, "Usage: slk upload <file> <channel> [--thread <ts>] [--comment <text>]");
+      const thIdx = args.indexOf("--thread");
+      const coIdx = args.indexOf("--comment");
+      const threadTs = thIdx > -1 ? args[thIdx + 1] : undefined;
+      const comment = coIdx > -1 ? args.slice(coIdx + 1).join(" ") : undefined;
+      return files.uploadFile(args[1], args[2], { threadTs, comment });
+    }
+
+    case "download":
+    case "dl":
+      if (!args[1]) return usageError(consoleObj, exit, "Usage: slk download <file_id> [out_path]");
+      return files.downloadFile(args[1], args[2] || null);
 
     case "workspace": {
       const sub = args[1];

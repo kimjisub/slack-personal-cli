@@ -88,6 +88,19 @@ test("printMessage omits the reaction line when there are none", () => {
   assert.ok(!logs.some((l) => /:\w+:\s+\d+/.test(l)));
 });
 
+test("printMessage surfaces the file id so it can be downloaded", () => {
+  const msg = {
+    user: "U1",
+    ts: "123.4",
+    text: "see attached",
+    files: [{ id: "F0BCDV724F2", name: "shot.png", mimetype: "image/png" }],
+  };
+  const logs = capture(() => printMessage({ U1: "Alice" }, msg));
+  const joined = logs.join("\n");
+  assert.ok(joined.includes("shot.png"));
+  assert.ok(joined.includes("id:F0BCDV724F2"));
+});
+
 // ── unread filtering (shared by render + json) ───────────
 
 const unreadData = {
