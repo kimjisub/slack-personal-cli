@@ -158,16 +158,19 @@ Automatic — extracts session tokens from Slack desktop app's LevelDB (`localCo
 - **Deny** — blocks access, slk cannot authenticate
 
 **Token cache:** `~/.local/slack-personal-cli/token-cache.json` — auto-validated, auto-refreshed on `invalid_auth`.
+**Cookie cache:** `~/.local/slack-personal-cli/cookie-cache.json` — decrypted Slack `d` cookie fallback, written mode `0600` after a successful interactive Keychain read.
 **Active workspace:** `~/.local/slack-personal-cli/active-workspace` — stores the selected team ID. Delete to reset to default.
 **Runtime coordination:** `~/.local/slack-personal-cli/runtime/` — shared pacing + 429 cooldown state for concurrent local `slk` processes.
 
 If auth fails (token rotated, Slack logged out):
 ```bash
-rm ~/.local/slack-personal-cli/token-cache.json
+rm ~/.local/slack-personal-cli/token-cache.json ~/.local/slack-personal-cli/cookie-cache.json
 slk auth
 ```
 
-Slack desktop app must be installed and logged in. Does not need to be running if token is cached.
+If Slack is visibly logged in and `slk workspace list` works, but `slk auth` says Keychain access failed from a background agent, run `slk auth` once from a normal interactive Terminal after installing this version. That refreshes the token + cookie cache so background agents can reuse it without showing a macOS Keychain prompt.
+
+Slack desktop app must be installed and logged in. Does not need to be running if credentials are cached.
 
 ## Workspaces
 

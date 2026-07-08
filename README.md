@@ -424,13 +424,20 @@ take a while.
 2. decrypts it using the `Slack Safe Storage` key from macOS Keychain
 3. scans Slack local storage for `xoxc-` session tokens
 4. validates candidate credentials against Slack
-5. caches the working token locally for faster future runs
+5. caches the working token and decrypted Slack cookie locally for faster future runs and background-agent reuse
 
-Token cache location:
+Cache locations:
 
 ```text
-~/.local/slack-personal-cli/token-cache.json
+~/.local/slack-personal-cli/token-cache.json   # xoxc token cache
+~/.local/slack-personal-cli/cookie-cache.json  # decrypted d-cookie fallback, mode 0600
 ```
+
+The cookie cache is used only when direct Keychain access fails. This helps
+background agents, launchd jobs, and cron-like processes that can read local
+files but cannot show a macOS Keychain prompt. Refresh the cache by running
+`slk auth` once from a normal interactive Terminal after Slack rotates the
+session or after logging into a new workspace.
 
 Runtime coordination files:
 
