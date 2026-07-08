@@ -86,7 +86,7 @@ slk auth                              # Test authentication, show user/team
 slk channels                          # List channels (alias: ch)
 slk dms                               # List DM conversations with IDs (alias: dm)
 slk users                             # List workspace users (alias: u)
-slk read <channel> [count]            # Read recent messages w/ reaction counts, default 20 (alias: r)
+slk read <channel> [count]            # Read recent messages w/ reaction counts + file ids, default 20 (alias: r)
 slk read @username [count]            # Read DMs by username
 slk read <channel> --threads          # Auto-expand all threads
 slk read <channel> --from 2026-02-01  # Date range filter
@@ -95,12 +95,26 @@ slk search <query> [count]            # Search messages (add -A to search all wo
 slk owed [--days N]                   # Mentions you haven't answered (emoji reaction counts as answered)
 slk send <channel> <message>          # Send a message (alias: s)
 slk send <channel> <message> --thread <ts>  # Send into an existing thread
+slk edit <channel> <ts> <message>     # Edit one of your messages
+slk delete <channel> <ts>             # Delete one of your messages (alias: del)
 slk react <channel> <ts> <emoji>      # React to a message
+slk unreact <channel> <ts> <emoji>    # Remove a reaction you added
+slk pin <channel> <ts>                # Pin a message (unpin <channel> <ts> to remove)
+slk save <channel> <ts>               # Save a message for later (unsave <channel> <ts> to remove)
+slk join <channel>                    # Join a channel (leave <channel> to exit)
 slk mark <channel>                    # Mark a channel as read (opt-in; -w supported, not -A)
 slk reply <channel> <ts> <message>    # Reply to a thread root or thread message
 slk message link <channel> <ts>       # Print the Slack permalink for one message
 slk message show <channel> <ts>       # Show one exact message
 slk message context <channel> <ts> [before] [after]  # Show nearby context
+
+# Files (read shows `id:F...` for each attachment; feed it to download)
+slk upload <file> <channel>           # Upload & share a file (--thread <ts>, --comment <text>)
+slk download <file_id> [out_path]     # Download a file to disk (alias: dl)
+
+# Presence
+slk status "<text>" [emoji] [--for N] # Set custom status (status clear to reset)
+slk dnd <minutes>                     # Snooze notifications (dnd off | dnd status)
 
 # Preferred workspace family
 slk workspace list                    # List all logged-in workspaces

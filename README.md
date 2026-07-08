@@ -260,12 +260,22 @@ slk draft dm @andrej "hey, can you take a look?"
 | `slk channels` | `ch` | List channels |
 | `slk dms` | `dm` | List DM conversations |
 | `slk users` | `u` | List workspace users |
-| `slk read <channel> [count]` | `r` | Read recent messages (shows reaction tallies) |
+| `slk read <channel> [count]` | `r` | Read recent messages (shows reaction tallies & file ids) |
 | `slk send <channel> <message>` | `s` | Send a message |
+| `slk edit <channel> <ts> <message>` |  | Edit one of your messages |
+| `slk delete <channel> <ts>` | `del` | Delete one of your messages |
 | `slk search <query> [count]` |  | Search messages (add `-A` to search every workspace) |
 | `slk owed [--days N]` |  | Mentions you haven't answered yet (an emoji reaction counts as answered) |
 | `slk thread <channel> <ts> [count]` | `t` | Read thread replies |
 | `slk react <channel> <ts> <emoji>` |  | Add a reaction |
+| `slk unreact <channel> <ts> <emoji>` |  | Remove a reaction |
+| `slk pin <channel> <ts>` / `unpin ...` |  | Pin / unpin a message |
+| `slk save <channel> <ts>` / `unsave ...` |  | Save / unsave a message for later |
+| `slk join <channel>` / `leave <channel>` |  | Join / leave a channel |
+| `slk status "<text>" [emoji] [--for N]` |  | Set custom status (`status clear` resets) |
+| `slk dnd <minutes>` |  | Snooze notifications (`dnd off` / `dnd status`) |
+| `slk upload <file> <channel>` |  | Upload & share a file (`--thread`, `--comment`) |
+| `slk download <file_id> [out]` | `dl` | Download a file to disk |
 | `slk mark <channel>` |  | Mark a channel as read (opt-in; `-w` supported, not `-A`) |
 
 ## Useful flags
