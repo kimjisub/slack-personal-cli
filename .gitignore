@@ -6,3 +6,6 @@ docs/superpowers/
 
 # Node
 node_modules/
+
+# Hermes 런타임 상태
+.hermes/
