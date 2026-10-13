@@ -33,6 +33,35 @@ Requirements:
 - Slack desktop app installed and logged in
 - Node.js 18+
 
+## CI and npm release automation
+
+This repo now includes two GitHub Actions workflows:
+
+- `CI` — runs on pushes to `main`, pull requests, and manual dispatch. It installs the package, runs `npm test`, and verifies the npm tarball with `npm pack --dry-run --json`.
+- `Publish to npm` — runs when you push a version tag like `v0.3.1` or trigger it manually from GitHub Actions. It verifies that the git tag matches `package.json`, runs tests, checks the tarball, and publishes to npm.
+
+### Required GitHub secret for publish
+
+Set this repository secret before using the publish workflow:
+
+- `NPM_TOKEN` — npm publish token with permission to publish `slack-personal-cli`
+
+The workflow uses that secret as `NODE_AUTH_TOKEN` during `npm publish`.
+
+### Typical release flow
+
+```bash
+npm version patch
+git push origin main --follow-tags
+```
+
+If you prefer to create the tag manually:
+
+```bash
+git tag v0.3.1
+git push origin v0.3.1
+```
+
 ### Local development install
 
 ```bash
