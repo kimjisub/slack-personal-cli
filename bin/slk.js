@@ -10,6 +10,7 @@ import * as defaultStatus from "../src/status.js";
 import * as defaultDnd from "../src/dnd.js";
 import * as defaultFiles from "../src/files.js";
 import { setJsonMode, die } from "../src/output.js";
+import { ACTIVE_WORKSPACE_ENV } from "../src/auth.js";
 import { pathToFileURL } from "node:url";
 import { realpathSync, readFileSync } from "node:fs";
 
@@ -186,6 +187,12 @@ export async function runCli(rawArgs = process.argv.slice(2), deps = {}) {
   if (workspace && all) {
     return usageError(consoleObj, exit, "Use either -w <workspace> or -A, not both.");
   }
+
+  // -w must hold for every command, not only the scope-aware ones. Commands
+  // that take no scope resolve credentials through the active workspace, so
+  // point that at -w for this process only — the `workspace use` file is left
+  // alone, and a script naming its workspace never depends on global state.
+  if (workspace) process.env[ACTIVE_WORKSPACE_ENV] = workspace;
 
   switch (command) {
     case "auth":

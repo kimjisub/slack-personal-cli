@@ -363,6 +363,7 @@ Every command defaults to the **active** workspace. Two flags change that scope:
 ```bash
 slk inbox unread                 # active workspace (default)
 slk inbox unread -w candid       # a specific workspace, without switching the active one
+slk read general 20 -w alpaon    # -w works on every command (read, channels, auth, ...)
 slk inbox unread -A              # aggregate across ALL logged-in workspaces
 ```
 
