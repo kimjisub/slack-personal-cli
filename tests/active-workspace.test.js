@@ -90,3 +90,33 @@ test("passing both -w and -A is a usage error (no command runs)", async () => {
   );
   assert.equal(calls.length, 0);
 });
+
+// ── CLI: -w applies to every command, not only scope-aware ones ──
+
+for (const [argv, method] of [
+  [["auth", "-w", "acme"], "auth"],
+  [["channels", "-w", "acme"], "channels"],
+  [["read", "C123", "5", "-w", "acme"], "read"],
+  [["-w", "acme", "users"], "users"],
+]) {
+  test(`-w targets the workspace for \`${argv.filter((a) => a !== "-w" && a !== "acme").join(" ")}\``, async () => {
+    const cli = await loadCli();
+    const seen = [];
+    const deps = {
+      cmd: { [method]: async () => seen.push(process.env.SLACK_CLI_WORKSPACE) },
+      console: { log: () => {}, error: () => {} },
+      exit: (code) => {
+        throw new Error(`EXIT:${code}`);
+      },
+    };
+    const prev = process.env[ACTIVE_WORKSPACE_ENV];
+    delete process.env[ACTIVE_WORKSPACE_ENV];
+    try {
+      await cli.runCli(argv, deps);
+      assert.deepEqual(seen, ["acme"]);
+    } finally {
+      if (prev === undefined) delete process.env[ACTIVE_WORKSPACE_ENV];
+      else process.env[ACTIVE_WORKSPACE_ENV] = prev;
+    }
+  });
+}
